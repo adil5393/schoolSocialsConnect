@@ -1,5 +1,6 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../lib/auth.jsx';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
@@ -16,7 +17,14 @@ const navItems = [
 
 export default function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const currentPath = location.pathname + location.search;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <aside className="bg-surface-container-low border-r border-outline-variant/10 h-screen w-64 fixed left-0 top-0 hidden md:flex flex-col py-md px-sm z-50">
@@ -61,8 +69,8 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Footer / Settings */}
-      <div className="mt-auto pt-4 border-t border-outline-variant/10">
+      {/* Footer / Settings / Logout */}
+      <div className="mt-auto pt-4 border-t border-outline-variant/10 space-y-1">
         <NavLink
           to="/accounts"
           className={({ isActive }) =>
@@ -76,6 +84,22 @@ export default function Sidebar() {
           <span className="material-symbols-outlined text-[20px]">settings</span>
           <span className="font-body-md text-body-md">Settings</span>
         </NavLink>
+
+        {user && (
+          <div className="px-3 pt-2 pb-1 truncate" title={user.email}>
+            <p className="font-body-sm text-body-sm text-on-surface font-semibold truncate">{user.full_name}</p>
+            <p className="font-label-md text-label-md text-on-surface-variant truncate">{user.email}</p>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors duration-200 text-error font-medium hover:bg-error-container/10 cursor-pointer"
+        >
+          <span className="material-symbols-outlined text-[20px]">logout</span>
+          <span className="font-body-md text-body-md">Log out</span>
+        </button>
       </div>
     </aside>
   );

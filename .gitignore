@@ -9,7 +9,7 @@ dist/
 .env
 .env.*
 !.env.example
-
+certbot/
 # Python
 __pycache__/
 *.py[cod]
