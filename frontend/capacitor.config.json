@@ -1,0 +1,10 @@
+{
+  "appId": "in.newangelssocial.smartclass",
+  "appName": "Smart Class",
+  "webDir": "dist",
+  "server": {
+    "url": "https://newangelssocial.in/smart-class/library",
+    "androidScheme": "https",
+    "cleartext": false
+  }
+}
