@@ -33,6 +33,21 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5174"
 
+    # Bootstrap admin: there is no public registration at all (see routers/auth_social.py /
+    # auth_smart_class.py) -- only an admin can create further users, via /admin/users. This
+    # account is auto-created on startup (idempotent -- skipped if it already exists) so there's
+    # always at least one way in. It's granted BOTH has_social_access and has_smart_class_access,
+    # so the same login works on both otherwise-isolated portals.
+    admin_email: str | None = None
+    admin_password: str | None = None
+    admin_full_name: str = "Admin"
+
+    # YouTube Downloader (isolated feature -- see app/services/youtube_service.py)
+    youtube_temp_dir: str = "/tmp/school-socials-youtube"
+    youtube_download_max_duration: int = 7200  # seconds
+    youtube_download_max_file_mb: int = 1000
+    youtube_download_timeout: int = 600  # seconds, per network operation
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

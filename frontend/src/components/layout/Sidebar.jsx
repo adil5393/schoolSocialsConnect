@@ -67,6 +67,24 @@ export default function Sidebar() {
             </NavLink>
           );
         })}
+
+        {/* Kept visually separate: an independent utility, not part of social publishing.
+            Smart Class Library lives in its own fully isolated section (separate login at
+            /smart-class/login) -- not linked from here at all, by design. */}
+        <div className="my-2 border-t border-outline-variant/10" />
+        <NavLink
+          to="/youtube-downloader"
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors duration-200 ${
+              isActive
+                ? 'text-primary font-bold border-l-2 border-primary bg-primary/5'
+                : 'text-on-surface-variant font-medium hover:bg-surface-variant/50'
+            }`
+          }
+        >
+          <span className="material-symbols-outlined text-[20px]">download</span>
+          <span className="font-body-md text-body-md">YouTube Downloader</span>
+        </NavLink>
       </nav>
 
       {/* Footer / Settings / Logout */}
@@ -84,6 +102,22 @@ export default function Sidebar() {
           <span className="material-symbols-outlined text-[20px]">settings</span>
           <span className="font-body-md text-body-md">Settings</span>
         </NavLink>
+
+        {user?.role === 'admin' && (
+          <NavLink
+            to="/admin/users"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors duration-200 ${
+                isActive
+                  ? 'text-primary font-bold border-l-2 border-primary bg-primary/5'
+                  : 'text-on-surface-variant font-medium hover:bg-surface-variant/50'
+              }`
+            }
+          >
+            <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+            <span className="font-body-md text-body-md">Manage Users</span>
+          </NavLink>
+        )}
 
         {user && (
           <div className="px-3 pt-2 pb-1 truncate" title={user.email}>

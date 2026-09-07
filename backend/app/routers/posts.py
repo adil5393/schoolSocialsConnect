@@ -4,7 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.session import SessionLocal
-from app.deps import get_current_user, get_db
+from app.deps import get_current_social_user, get_db
 from app.models.media_asset import MediaAsset
 from app.models.post import Post, PostMedia, PostStatus, PostTarget
 from app.models.social_account import SocialAccount
@@ -81,7 +81,7 @@ def _apply_media_and_targets(
 
 
 @router.post("", response_model=PostOut, status_code=status.HTTP_201_CREATED)
-def create_post(payload: PostCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> PostOut:
+def create_post(payload: PostCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_social_user)) -> PostOut:
     post = Post(
         caption=payload.caption,
         status=PostStatus.scheduled if payload.scheduled_at else PostStatus.draft,
@@ -96,7 +96,7 @@ def create_post(payload: PostCreate, db: Session = Depends(get_db), current_user
 
 
 @router.get("", response_model=list[PostOut])
-def list_posts(status_filter: str | None = None, db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> list[PostOut]:
+def list_posts(status_filter: str | None = None, db: Session = Depends(get_db), _: User = Depends(get_current_social_user)) -> list[PostOut]:
     query = db.query(Post).options(
         joinedload(Post.media_items).joinedload(PostMedia.media_asset),
         joinedload(Post.targets).joinedload(PostTarget.social_account),
@@ -108,12 +108,12 @@ def list_posts(status_filter: str | None = None, db: Session = Depends(get_db), 
 
 
 @router.get("/{post_id}", response_model=PostOut)
-def get_post(post_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> PostOut:
+def get_post(post_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_social_user)) -> PostOut:
     return to_out(_load(db, post_id))
 
 
 @router.patch("/{post_id}", response_model=PostOut)
-def update_post(post_id: int, payload: PostUpdate, db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> PostOut:
+def update_post(post_id: int, payload: PostUpdate, db: Session = Depends(get_db), _: User = Depends(get_current_social_user)) -> PostOut:
     post = _load(db, post_id)
     if payload.caption is not None:
         post.caption = payload.caption
@@ -126,7 +126,7 @@ def update_post(post_id: int, payload: PostUpdate, db: Session = Depends(get_db)
 
 
 @router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(post_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> None:
+def delete_post(post_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_social_user)) -> None:
     post = _load(db, post_id)
     db.delete(post)
     db.commit()
@@ -134,7 +134,7 @@ def delete_post(post_id: int, db: Session = Depends(get_db), _: User = Depends(g
 
 @router.post("/{post_id}/schedule", response_model=PostOut)
 def schedule_post(
-    post_id: int, payload: ScheduleRequest, db: Session = Depends(get_db), _: User = Depends(get_current_user)
+    post_id: int, payload: ScheduleRequest, db: Session = Depends(get_db), _: User = Depends(get_current_social_user)
 ) -> PostOut:
     post = _load(db, post_id)
     if not post.targets:
@@ -156,7 +156,7 @@ def _publish_in_background(post_id: int) -> None:
 
 @router.post("/{post_id}/publish-now", response_model=PostOut)
 def publish_now(
-    post_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), _: User = Depends(get_current_user)
+    post_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), _: User = Depends(get_current_social_user)
 ) -> PostOut:
     post = _load(db, post_id)
     if not post.targets:

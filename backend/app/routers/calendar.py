@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session, joinedload
 
-from app.deps import get_current_user, get_db
+from app.deps import get_current_social_user, get_db
 from app.models.post import Post, PostMedia, PostTarget
 from app.models.user import User
 from app.routers.posts import to_out
@@ -17,7 +17,7 @@ def get_calendar_posts(
     date_from: datetime = Query(..., alias="from"),
     date_to: datetime = Query(..., alias="to"),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(get_current_social_user),
 ) -> list[PostOut]:
     posts = (
         db.query(Post)

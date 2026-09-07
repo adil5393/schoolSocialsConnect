@@ -19,6 +19,9 @@ env/
 venv/
 ENV/
 
+# Local antivirus SSL-scanning root cert (machine-specific, e.g. Norton -- see backend/dockerfile)
+backend/norton-root.crt
+
 # IDE & OS
 .vscode/
 .idea/

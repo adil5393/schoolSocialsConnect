@@ -1,6 +1,7 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
 sqlalchemy==2.0.35
+alembic==1.13.3
 psycopg2-binary==2.9.9
 pydantic==2.9.2
 pydantic-settings==2.5.2
@@ -13,3 +14,6 @@ minio==7.2.9
 httpx==0.27.2
 apscheduler==3.10.4
 cryptography==43.0.1
+# Unpinned deliberately: yt-dlp needs frequent updates to keep working as YouTube changes its
+# site/extraction internals -- pinning would silently rot.
+yt-dlp

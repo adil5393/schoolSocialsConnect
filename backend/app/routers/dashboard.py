@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import extract
 from sqlalchemy.orm import Session
 
-from app.deps import get_current_user, get_db
+from app.deps import get_current_social_user, get_db
 from app.models.post import Post, PostStatus, PostTarget, PostTargetStatus
 from app.models.social_account import SocialAccount, SocialAccountStatus
 from app.models.user import User
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 
 @router.get("/stats", response_model=DashboardStats)
-def get_stats(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> DashboardStats:
+def get_stats(db: Session = Depends(get_db), _: User = Depends(get_current_social_user)) -> DashboardStats:
     now = datetime.now(timezone.utc)
     connected_accounts = db.query(SocialAccount).filter(SocialAccount.status == SocialAccountStatus.connected).count()
     scheduled_posts = db.query(Post).filter(Post.status == PostStatus.scheduled).count()
@@ -33,7 +33,7 @@ def get_stats(db: Session = Depends(get_db), _: User = Depends(get_current_user)
 
 
 @router.get("/activity", response_model=list[ActivityItem])
-def get_activity(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> list[ActivityItem]:
+def get_activity(db: Session = Depends(get_db), _: User = Depends(get_current_social_user)) -> list[ActivityItem]:
     targets = (
         db.query(PostTarget)
         .filter(PostTarget.status.in_([PostTargetStatus.published, PostTargetStatus.failed]))
@@ -64,7 +64,7 @@ def get_activity(db: Session = Depends(get_db), _: User = Depends(get_current_us
 
 
 @router.get("/channels", response_model=list[ChannelOverview])
-def get_channels(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> list[ChannelOverview]:
+def get_channels(db: Session = Depends(get_db), _: User = Depends(get_current_social_user)) -> list[ChannelOverview]:
     accounts = db.query(SocialAccount).all()
     return [
         ChannelOverview(

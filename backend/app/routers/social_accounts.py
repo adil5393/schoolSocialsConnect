@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.crypto import encrypt_token
-from app.deps import get_current_user, get_db
+from app.deps import get_current_social_user, get_db
 from app.models.social_account import SocialAccount, SocialAccountStatus
 from app.models.user import User
 from app.schemas.social_account import SocialAccountCreate, SocialAccountOut
@@ -11,13 +11,13 @@ router = APIRouter(prefix="/social-accounts", tags=["social-accounts"])
 
 
 @router.get("", response_model=list[SocialAccountOut])
-def list_accounts(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> list[SocialAccount]:
+def list_accounts(db: Session = Depends(get_db), _: User = Depends(get_current_social_user)) -> list[SocialAccount]:
     return db.query(SocialAccount).order_by(SocialAccount.created_at.desc()).all()
 
 
 @router.post("", response_model=SocialAccountOut, status_code=status.HTTP_201_CREATED)
 def add_account(
-    payload: SocialAccountCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+    payload: SocialAccountCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_social_user)
 ) -> SocialAccount:
     account = SocialAccount(
         platform=payload.platform,
@@ -35,7 +35,7 @@ def add_account(
 
 @router.post("/{account_id}/reconnect", response_model=SocialAccountOut)
 def reconnect_account(
-    account_id: int, payload: SocialAccountCreate, db: Session = Depends(get_db), _: User = Depends(get_current_user)
+    account_id: int, payload: SocialAccountCreate, db: Session = Depends(get_db), _: User = Depends(get_current_social_user)
 ) -> SocialAccount:
     account = db.get(SocialAccount, account_id)
     if account is None:
@@ -51,7 +51,7 @@ def reconnect_account(
 
 
 @router.delete("/{account_id}", status_code=status.HTTP_204_NO_CONTENT)
-def disconnect_account(account_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> None:
+def disconnect_account(account_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_social_user)) -> None:
     account = db.get(SocialAccount, account_id)
     if account is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Social account not found")

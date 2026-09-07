@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.deps import get_current_user, get_db
+from app.deps import get_current_social_user, get_db
 from app.models.user import User
 from app.models.whatsapp import WhatsAppContact, WhatsAppContactGroup, WhatsAppTemplate
 from app.schemas.whatsapp import (
@@ -17,13 +17,13 @@ router = APIRouter(tags=["whatsapp"])
 
 
 @router.get("/whatsapp-groups", response_model=list[WhatsAppGroupOut])
-def list_groups(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> list[WhatsAppContactGroup]:
+def list_groups(db: Session = Depends(get_db), _: User = Depends(get_current_social_user)) -> list[WhatsAppContactGroup]:
     return db.query(WhatsAppContactGroup).options(joinedload(WhatsAppContactGroup.contacts)).all()
 
 
 @router.post("/whatsapp-groups", response_model=WhatsAppGroupOut, status_code=status.HTTP_201_CREATED)
 def create_group(
-    payload: WhatsAppGroupCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+    payload: WhatsAppGroupCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_social_user)
 ) -> WhatsAppContactGroup:
     group = WhatsAppContactGroup(name=payload.name, created_by_id=current_user.id)
     db.add(group)
@@ -34,7 +34,7 @@ def create_group(
 
 @router.post("/whatsapp-groups/{group_id}/contacts", response_model=WhatsAppContactOut, status_code=status.HTTP_201_CREATED)
 def add_contact(
-    group_id: int, payload: WhatsAppContactCreate, db: Session = Depends(get_db), _: User = Depends(get_current_user)
+    group_id: int, payload: WhatsAppContactCreate, db: Session = Depends(get_db), _: User = Depends(get_current_social_user)
 ) -> WhatsAppContact:
     group = db.get(WhatsAppContactGroup, group_id)
     if group is None:
@@ -47,13 +47,13 @@ def add_contact(
 
 
 @router.get("/whatsapp-templates", response_model=list[WhatsAppTemplateOut])
-def list_templates(db: Session = Depends(get_db), _: User = Depends(get_current_user)) -> list[WhatsAppTemplate]:
+def list_templates(db: Session = Depends(get_db), _: User = Depends(get_current_social_user)) -> list[WhatsAppTemplate]:
     return db.query(WhatsAppTemplate).all()
 
 
 @router.post("/whatsapp-templates", response_model=WhatsAppTemplateOut, status_code=status.HTTP_201_CREATED)
 def create_template(
-    payload: WhatsAppTemplateCreate, db: Session = Depends(get_db), _: User = Depends(get_current_user)
+    payload: WhatsAppTemplateCreate, db: Session = Depends(get_db), _: User = Depends(get_current_social_user)
 ) -> WhatsAppTemplate:
     template = WhatsAppTemplate(**payload.model_dump())
     db.add(template)

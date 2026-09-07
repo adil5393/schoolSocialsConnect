@@ -56,6 +56,14 @@ def upload_bytes(object_key: str, data: bytes, content_type: str) -> None:
     )
 
 
+def upload_file(object_key: str, file_path: str, content_type: str) -> None:
+    """Like upload_bytes, but streams directly from disk (Minio's fput_object) instead of loading
+    the whole file into memory first -- used for library videos, which can be large (up to
+    YOUTUBE_DOWNLOAD_MAX_FILE_MB).
+    """
+    _internal_client().fput_object(settings.minio_bucket, object_key, file_path, content_type=content_type)
+
+
 def get_bytes(object_key: str) -> bytes:
     response = _internal_client().get_object(settings.minio_bucket, object_key)
     try:
@@ -72,16 +80,21 @@ def delete_object(object_key: str) -> None:
         pass
 
 
-def presigned_url(object_key: str, audience: str = "browser") -> str:
+def presigned_url(object_key: str, audience: str = "browser", expires_minutes: int = 10) -> str:
     """Presigning is a local crypto operation: the URL's host and its signature are computed
     together for whichever client signs it, so rewriting the host afterwards would invalidate the
     signature. A dedicated client per audience is used instead:
 
     - audience="browser" signs against MINIO_BROWSER_ENDPOINT (e.g. localhost:9010, reachable via
-      the docker-compose port mapping) -- used for thumbnails/previews shown in the app UI.
+      the docker-compose port mapping) -- used for thumbnails/previews shown in the app UI, and for
+      Smart Class Library video playback (with a longer expiry -- see library_service.py).
     - audience="public" signs against PUBLIC_MEDIA_BASE_URL (an internet-reachable tunnel/domain) --
       required for Instagram's Graph API, which fetches image_url/video_url server-side and cannot
       reach a local Minio instance.
+
+    Minio's presigned GET URLs natively support HTTP Range requests, which is what lets a plain
+    <video> tag seek/buffer without downloading the whole file first -- no separate streaming
+    endpoint is needed.
     """
     client = _public_client() if audience == "public" else _browser_client()
-    return client.presigned_get_object(settings.minio_bucket, object_key, expires=timedelta(minutes=10))
+    return client.presigned_get_object(settings.minio_bucket, object_key, expires=timedelta(minutes=expires_minutes))

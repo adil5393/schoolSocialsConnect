@@ -2,6 +2,12 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# ffmpeg is required by the YouTube Downloader feature (merging separate video/audio streams,
+# MP3/M4A conversion) -- installed as its own layer so it's cached independently of requirements.txt.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
@@ -10,4 +16,16 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Runs pending Alembic migrations before starting the app. On a database that predates Alembic
+# (i.e. was created via the old create_all() startup), the FIRST deploy after this change needs a
+# one-time `docker compose exec backend alembic stamp <baseline-revision>` run manually before this
+# command's `alembic upgrade head` executes -- otherwise it will try to CREATE TABLE on tables that
+# already exist and fail. See the deploy notes in the project summary for the exact command.
+#
+# If backend/norton-root.crt exists (some local dev machines run antivirus SSL-scanning that
+# re-signs outbound HTTPS -- e.g. Norton -- which the container doesn't trust by default), it's
+# installed into both the system trust store AND certifi's bundle (httpx/requests/yt-dlp use
+# certifi's own CA file, not the OS one, when certifi is installed -- updating only the system
+# store is not enough). This is a no-op everywhere else, including production, where that file
+# won't exist.
+CMD ["sh", "-c", "if [ -f /app/norton-root.crt ]; then cp /app/norton-root.crt /usr/local/share/ca-certificates/norton-root.crt && update-ca-certificates && cat /app/norton-root.crt >> $(python3 -c 'import certifi; print(certifi.where())'); fi && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
