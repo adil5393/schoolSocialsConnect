@@ -69,7 +69,7 @@ def _ensure_browser_compatible(file_path: Path, request_dir: Path) -> Path:
             "-c:v",
             "libx264",
             "-preset",
-            "veryfast",
+            "ultrafast",  # speed over compression ratio -- this runs on modest server hardware
             "-crf",
             "23",
             "-vf",
@@ -83,7 +83,7 @@ def _ensure_browser_compatible(file_path: Path, request_dir: Path) -> Path:
             str(output_path),
         ],
         capture_output=True,
-        timeout=settings.youtube_download_timeout,
+        timeout=settings.video_processing_timeout,
         check=True,
     )
     return output_path

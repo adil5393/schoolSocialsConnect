@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     youtube_download_max_duration: int = 7200  # seconds
     youtube_download_max_file_mb: int = 1000
     youtube_download_timeout: int = 600  # seconds, per network operation
+    # Separate from youtube_download_timeout on purpose: that one bounds a single socket
+    # operation during download, while transcoding a long video can legitimately take much
+    # longer on a modest server -- conflating the two caused real timeouts in production.
+    video_processing_timeout: int = 2700  # seconds (45 min) for the ffmpeg normalize step
 
     @property
     def cors_origin_list(self) -> list[str]:
