@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     # operation during download, while transcoding a long video can legitimately take much
     # longer on a modest server -- conflating the two caused real timeouts in production.
     video_processing_timeout: int = 2700  # seconds (45 min) for the ffmpeg normalize step
+    # Caps how many videos can be downloading/transcoding at once -- ffmpeg is CPU-heavy and this
+    # runs on the same modest server as the rest of the API, so unbounded concurrency here can
+    # starve everything else (logins, dashboard, publishing) under load. Extra requests queue
+    # (stay "pending") rather than piling on and fighting for the same CPU.
+    video_processing_max_concurrent: int = 2
 
     @property
     def cors_origin_list(self) -> list[str]:

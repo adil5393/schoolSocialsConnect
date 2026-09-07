@@ -1,6 +1,8 @@
 import json
 import logging
+import os
 import subprocess
+import threading
 import uuid
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -15,6 +17,32 @@ from app.services import storage_service, youtube_service
 logger = logging.getLogger(__name__)
 
 LIBRARY_VIDEO_URL_EXPIRES_MINUTES = 240  # long-lived so pausing/rewatching doesn't hit an expired URL
+
+# Bounds how many videos can be downloading/transcoding at once across the whole process (see
+# VIDEO_PROCESSING_MAX_CONCURRENT). A background task blocked on this semaphore simply leaves its
+# MediaAsset in "pending" -- which already reads correctly as "queued" in the UI -- rather than
+# needing a separate queued state.
+_PROCESSING_SEMAPHORE = threading.Semaphore(settings.video_processing_max_concurrent)
+
+
+def _with_lowered_priority(fn, *args, **kwargs):
+    """Runs fn with this worker thread's OS scheduling priority turned down, so a heavy in-process
+    call (yt-dlp's download) yields CPU to the API's request-handling threads under contention.
+    Linux-only and best-effort: setpriority on a thread id works via PRIO_PROCESS on Linux, but
+    silently does nothing (rather than failing) anywhere it doesn't apply.
+    """
+    tid = threading.get_native_id()
+    try:
+        os.setpriority(os.PRIO_PROCESS, tid, 10)
+    except (AttributeError, OSError):
+        pass
+    try:
+        return fn(*args, **kwargs)
+    finally:
+        try:
+            os.setpriority(os.PRIO_PROCESS, tid, 0)
+        except (AttributeError, OSError):
+            pass
 
 
 def extract_youtube_video_id(url: str) -> str | None:
@@ -62,6 +90,9 @@ def _ensure_browser_compatible(file_path: Path, request_dir: Path) -> Path:
     output_path = request_dir / f"{file_path.stem}_normalized.mp4"
     subprocess.run(
         [
+            "nice",
+            "-n",
+            "10",  # yields CPU to the API's own processes under contention -- see module docstring
             "ffmpeg",
             "-y",
             "-i",
@@ -115,6 +146,10 @@ def process_library_video(media_asset_id: int) -> None:
     posts.publish_now): downloads via the existing youtube_service, normalizes for browser/Android
     compatibility only if needed, uploads to MinIO, and marks the MediaAsset ready or failed.
     Never leaves a raw traceback in error_message.
+
+    Blocks on _PROCESSING_SEMAPHORE before doing any real work, so at most
+    VIDEO_PROCESSING_MAX_CONCURRENT of these run at once -- extra ones simply wait (their
+    MediaAsset stays "pending", not yet "processing") instead of piling onto the CPU together.
     """
     db = SessionLocal()
     request_dir: Path | None = None
@@ -123,45 +158,48 @@ def process_library_video(media_asset_id: int) -> None:
         if asset is None:
             return
 
-        asset.status = MediaAssetStatus.processing
-        db.commit()
-
-        try:
-            _set_stage(db, asset, "fetching")
-            file_path, _filename, request_dir = youtube_service.download_media(asset.source_url, "video", "mp4", "720")
-        except youtube_service.YouTubeError as exc:
-            asset.status = MediaAssetStatus.failed
-            asset.error_message = exc.message
+        with _PROCESSING_SEMAPHORE:
+            asset.status = MediaAssetStatus.processing
             db.commit()
-            return
 
-        try:
-            _set_stage(db, asset, "processing")
-            final_path = _ensure_browser_compatible(file_path, request_dir)
+            try:
+                _set_stage(db, asset, "fetching")
+                file_path, _filename, request_dir = _with_lowered_priority(
+                    youtube_service.download_media, asset.source_url, "video", "mp4", "720"
+                )
+            except youtube_service.YouTubeError as exc:
+                asset.status = MediaAssetStatus.failed
+                asset.error_message = exc.message
+                db.commit()
+                return
 
-            _set_stage(db, asset, "uploading")
-            video_object_key = f"videos/{asset.id}/{uuid.uuid4().hex}.mp4"
-            storage_service.upload_file(video_object_key, str(final_path), "video/mp4")
+            try:
+                _set_stage(db, asset, "processing")
+                final_path = _ensure_browser_compatible(file_path, request_dir)
 
-            info = youtube_service.fetch_info(asset.source_url)
-            thumbnail_key = _upload_thumbnail(info.thumbnail, asset.id) if info.thumbnail else None
+                _set_stage(db, asset, "uploading")
+                video_object_key = f"videos/{asset.id}/{uuid.uuid4().hex}.mp4"
+                storage_service.upload_file(video_object_key, str(final_path), "video/mp4")
 
-            asset.object_key = video_object_key
-            asset.bucket = settings.minio_bucket
-            asset.mime_type = "video/mp4"
-            asset.size_bytes = final_path.stat().st_size
-            asset.duration_seconds = info.duration or asset.duration_seconds
-            asset.thumbnail_object_key = thumbnail_key
-            asset.status = MediaAssetStatus.ready
-            asset.processing_stage = None
-            asset.error_message = None
-            db.commit()
-        except Exception:
-            logger.exception("Failed to process library video %s", media_asset_id)
-            asset.status = MediaAssetStatus.failed
-            asset.processing_stage = None
-            asset.error_message = "Failed to process this video. Please try again."
-            db.commit()
+                info = youtube_service.fetch_info(asset.source_url)
+                thumbnail_key = _upload_thumbnail(info.thumbnail, asset.id) if info.thumbnail else None
+
+                asset.object_key = video_object_key
+                asset.bucket = settings.minio_bucket
+                asset.mime_type = "video/mp4"
+                asset.size_bytes = final_path.stat().st_size
+                asset.duration_seconds = info.duration or asset.duration_seconds
+                asset.thumbnail_object_key = thumbnail_key
+                asset.status = MediaAssetStatus.ready
+                asset.processing_stage = None
+                asset.error_message = None
+                db.commit()
+            except Exception:
+                logger.exception("Failed to process library video %s", media_asset_id)
+                asset.status = MediaAssetStatus.failed
+                asset.processing_stage = None
+                asset.error_message = "Failed to process this video. Please try again."
+                db.commit()
     finally:
         if request_dir is not None:
             youtube_service.cleanup_dir(request_dir)
