@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import SmartClassTopBar from '../components/layout/SmartClassTopBar';
 import VideoPlayerModal from '../components/library/VideoPlayerModal';
+import ImageViewerModal from '../components/library/ImageViewerModal';
 import { ApiError, apiFetch } from '../lib/smartClassAuth.jsx';
 
 function formatDuration(seconds) {
@@ -10,6 +11,8 @@ function formatDuration(seconds) {
   const s = Math.floor(seconds % 60);
   return `${m}:${String(s).padStart(2, '0')}`;
 }
+
+const MEDIA_TYPE_ICON = { video: 'play_circle', image: 'image', pdf: 'picture_as_pdf', document: 'slideshow' };
 
 export default function SmartClassLibraryPage() {
   const navigate = useNavigate();
@@ -31,6 +34,7 @@ export default function SmartClassLibraryPage() {
 
   const [error, setError] = useState('');
   const [playingMaterial, setPlayingMaterial] = useState(null);
+  const [viewingImage, setViewingImage] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -99,18 +103,32 @@ export default function SmartClassLibraryPage() {
     setSearchResults(null);
   };
 
-  const renderVideoRow = (material) => (
+  const handleOpenMaterial = (material) => {
+    if (material.media_type === 'video') {
+      setPlayingMaterial(material);
+    } else if (material.media_type === 'image') {
+      setViewingImage(material);
+    } else if (material.file_url) {
+      // PDF/PowerPoint: no in-app viewer -- open the file directly in a new tab (browsers render
+      // PDFs natively; PowerPoint files download/open via the OS's associated app).
+      window.open(material.file_url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const renderMaterialRow = (material) => (
     <button
       key={material.id}
       type="button"
-      onClick={() => setPlayingMaterial(material)}
+      onClick={() => handleOpenMaterial(material)}
       className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-surface-variant/40 transition-colors text-left cursor-pointer"
     >
       <div className="w-24 h-14 rounded-md overflow-hidden bg-surface-dim border border-outline-variant/20 shrink-0 flex items-center justify-center">
-        {material.thumbnail_url ? (
-          <img src={material.thumbnail_url} alt="" className="w-full h-full object-cover" />
+        {material.thumbnail_url || (material.media_type === 'image' && material.file_url) ? (
+          <img src={material.thumbnail_url || material.file_url} alt="" className="w-full h-full object-cover" />
         ) : (
-          <span className="material-symbols-outlined text-on-surface-variant">play_circle</span>
+          <span className="material-symbols-outlined text-on-surface-variant">
+            {MEDIA_TYPE_ICON[material.media_type] || 'description'}
+          </span>
         )}
       </div>
       <div className="min-w-0 flex-1">
@@ -119,7 +137,9 @@ export default function SmartClassLibraryPage() {
           <p className="font-label-md text-label-md text-on-surface-variant">{formatDuration(material.duration_seconds)}</p>
         )}
       </div>
-      <span className="material-symbols-outlined text-primary">play_arrow</span>
+      <span className="material-symbols-outlined text-primary">
+        {material.media_type === 'video' ? 'play_arrow' : material.media_type === 'image' ? 'visibility' : 'open_in_new'}
+      </span>
     </button>
   );
 
@@ -134,7 +154,7 @@ export default function SmartClassLibraryPage() {
               <h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-bold text-on-surface tracking-tight">
                 Smart Class Library
               </h1>
-              <p className="font-body-lg text-body-lg text-on-surface-variant mt-2">Browse and play classroom videos.</p>
+              <p className="font-body-lg text-body-lg text-on-surface-variant mt-2">Browse classroom videos, images, and documents.</p>
             </div>
             <button
               type="button"
@@ -189,7 +209,7 @@ export default function SmartClassLibraryPage() {
                     <p className="font-label-md text-label-md text-on-surface-variant mb-1">
                       Class {m.class_name} → {m.subject_name} → {m.chapter_name} → {m.part_title}
                     </p>
-                    {renderVideoRow(m)}
+                    {renderMaterialRow(m)}
                   </div>
                 ))
               )}
@@ -280,9 +300,9 @@ export default function SmartClassLibraryPage() {
                           </h4>
                           <div className="flex flex-col gap-1">
                             {(materialsByPart.get(part.id) || []).length === 0 ? (
-                              <p className="font-body-sm text-body-sm text-on-surface-variant/70 pl-2">No videos in this part yet.</p>
+                              <p className="font-body-sm text-body-sm text-on-surface-variant/70 pl-2">No materials in this part yet.</p>
                             ) : (
-                              materialsByPart.get(part.id).map(renderVideoRow)
+                              materialsByPart.get(part.id).map(renderMaterialRow)
                             )}
                           </div>
                         </div>
@@ -296,6 +316,7 @@ export default function SmartClassLibraryPage() {
       </main>
 
       <VideoPlayerModal material={playingMaterial} onClose={() => setPlayingMaterial(null)} />
+      <ImageViewerModal material={viewingImage} onClose={() => setViewingImage(null)} />
     </div>
   );
 }

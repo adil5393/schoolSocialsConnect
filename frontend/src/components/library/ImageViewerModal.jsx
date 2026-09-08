@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function VideoPlayerModal({ material, onClose }) {
+export default function ImageViewerModal({ material, onClose }) {
   if (!material) return null;
 
   return (
@@ -22,11 +22,11 @@ export default function VideoPlayerModal({ material, onClose }) {
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
-        <div className="bg-black aspect-video">
+        <div className="bg-black flex items-center justify-center max-h-[80vh] overflow-auto">
           {material.file_url ? (
-            <video src={material.file_url} controls autoPlay className="w-full h-full" />
+            <img src={material.file_url} alt={material.title} className="max-w-full max-h-[80vh] object-contain" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-on-surface-variant">Video not available</div>
+            <div className="w-full aspect-video flex items-center justify-center text-on-surface-variant">Image not available</div>
           )}
         </div>
       </div>
