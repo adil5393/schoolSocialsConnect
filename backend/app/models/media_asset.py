@@ -10,6 +10,8 @@ from app.db.base_class import Base
 class MediaType(str, enum.Enum):
     image = "image"
     video = "video"
+    pdf = "pdf"
+    document = "document"  # PowerPoint (.ppt/.pptx) for now
 
 
 class MediaAssetStatus(str, enum.Enum):

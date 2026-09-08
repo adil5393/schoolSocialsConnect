@@ -1,7 +1,10 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+import uuid
+
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.config import settings
 from app.deps import get_current_smart_class_user, get_db
 from app.models.curriculum import Chapter, ChapterPart, LearningMaterial, SchoolClass, Subject
 from app.models.media_asset import MediaAsset, MediaAssetStatus, MediaType
@@ -13,6 +16,23 @@ from app.services import curriculum_service, library_service, storage_service, y
 from app.services.youtube_service import YouTubeError
 
 router = APIRouter(prefix="/library", tags=["library"])
+
+# Direct-upload counterpart to the paste-a-link flow (see save_video/upload_material below).
+# Keyed by exact content-type so we reject anything unexpected with a clear error rather than
+# guessing from the filename.
+UPLOAD_MEDIA_TYPES: dict[str, MediaType] = {
+    "image/jpeg": MediaType.image,
+    "image/png": MediaType.image,
+    "image/webp": MediaType.image,
+    "image/gif": MediaType.image,
+    "video/mp4": MediaType.video,
+    "video/quicktime": MediaType.video,
+    "video/webm": MediaType.video,
+    "video/x-matroska": MediaType.video,
+    "application/pdf": MediaType.pdf,
+    "application/vnd.ms-powerpoint": MediaType.document,
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": MediaType.document,
+}
 
 
 def _require_admin(user: User) -> None:
@@ -94,7 +114,7 @@ def _material_to_out(db: Session, material: LearningMaterial) -> MaterialOut:
     thumbnail_url = (
         storage_service.presigned_url(asset.thumbnail_object_key, audience="browser") if asset.thumbnail_object_key else None
     )
-    video_url = (
+    file_url = (
         storage_service.presigned_url(
             asset.object_key, audience="browser", expires_minutes=library_service.LIBRARY_VIDEO_URL_EXPIRES_MINUTES
         )
@@ -105,6 +125,7 @@ def _material_to_out(db: Session, material: LearningMaterial) -> MaterialOut:
         id=material.id,
         media_asset_id=asset.id,
         title=material.title,
+        media_type=asset.media_type.value,
         status=asset.status.value,
         processing_stage=asset.processing_stage,
         error_message=asset.error_message,
@@ -119,7 +140,7 @@ def _material_to_out(db: Session, material: LearningMaterial) -> MaterialOut:
         order_in_part=material.order_in_part,
         duration_seconds=asset.duration_seconds,
         thumbnail_url=thumbnail_url,
-        video_url=video_url,
+        file_url=file_url,
         created_at=material.created_at,
     )
 
@@ -240,6 +261,88 @@ def save_video(
     db.commit()
 
     background_tasks.add_task(library_service.process_library_video, asset.id)
+
+    return SaveVideoResponse(material=_material_to_out(db, _load_material(db, material.id)), reused_existing_asset=False)
+
+
+@router.post("/materials/upload", response_model=SaveVideoResponse, status_code=status.HTTP_201_CREATED)
+async def upload_material(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    title: str = Form(..., min_length=1, max_length=255),
+    class_id: int = Form(...),
+    subject_id: int = Form(...),
+    chapter_name: str = Form(..., min_length=1, max_length=255),
+    part_title: str = Form(..., min_length=1, max_length=255),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_smart_class_user),
+) -> SaveVideoResponse:
+    """Direct-file counterpart to save_video (paste-a-link). Images/PDF/PowerPoint are small
+    enough to store synchronously in this request; only video needs the same background
+    normalize-and-upload pipeline as the YouTube path (reused via process_uploaded_video). There's
+    no dedup check here -- that concept (same source_video_id) only applies to link-based ingestion.
+    """
+    media_type = UPLOAD_MEDIA_TYPES.get(file.content_type)
+    if media_type is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported file type: {file.content_type}. Supported: images, PDF, PowerPoint, video.",
+        )
+
+    if db.get(SchoolClass, class_id) is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Class not found")
+    if db.get(Subject, subject_id) is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Subject not found")
+
+    data = await file.read()
+    max_bytes = settings.youtube_download_max_file_mb * 1024 * 1024
+    if len(data) > max_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File exceeds the {settings.youtube_download_max_file_mb}MB limit",
+        )
+
+    chapter = curriculum_service.get_or_create_chapter(db, class_id, subject_id, chapter_name)
+    part = curriculum_service.get_or_create_part(db, chapter.id, part_title)
+
+    is_video = media_type == MediaType.video
+    asset = MediaAsset(
+        filename=file.filename or title,
+        media_type=media_type,
+        mime_type=file.content_type,
+        size_bytes=len(data),
+        source_type="upload",
+        uploaded_by_id=current_user.id,
+        status=MediaAssetStatus.pending if is_video else MediaAssetStatus.ready,
+    )
+    db.add(asset)
+    db.flush()
+
+    next_order = db.query(func.max(LearningMaterial.order_in_part)).filter(LearningMaterial.part_id == part.id).scalar() or 0
+    material = LearningMaterial(
+        media_asset_id=asset.id,
+        class_id=class_id,
+        subject_id=subject_id,
+        chapter_id=chapter.id,
+        part_id=part.id,
+        title=title,
+        order_in_part=next_order + 1,
+        created_by_id=current_user.id,
+    )
+    db.add(material)
+
+    if is_video:
+        db.commit()
+        scratch_dir = library_service.create_scratch_dir()
+        temp_path = scratch_dir / (file.filename or "upload.mp4")
+        temp_path.write_bytes(data)
+        background_tasks.add_task(library_service.process_uploaded_video, asset.id, str(temp_path), str(scratch_dir))
+    else:
+        object_key = f"materials/{asset.id}/{uuid.uuid4().hex}_{file.filename or 'file'}"
+        storage_service.upload_bytes(object_key, data, file.content_type)
+        asset.object_key = object_key
+        asset.bucket = settings.minio_bucket
+        db.commit()
 
     return SaveVideoResponse(material=_material_to_out(db, _load_material(db, material.id)), reused_existing_asset=False)
 

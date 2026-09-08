@@ -26,6 +26,7 @@ class MaterialOut(BaseModel):
     id: int
     media_asset_id: int
     title: str
+    media_type: str  # image | video | pdf | document
     status: str
     processing_stage: str | None
     error_message: str | None
@@ -40,7 +41,9 @@ class MaterialOut(BaseModel):
     order_in_part: int
     duration_seconds: int | None
     thumbnail_url: str | None
-    video_url: str | None
+    # The material's own content -- a streamable video URL, a viewable image URL, or a
+    # downloadable/openable PDF or PowerPoint URL, depending on media_type.
+    file_url: str | None
     created_at: datetime
 
 

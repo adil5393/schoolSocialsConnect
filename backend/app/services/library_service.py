@@ -59,9 +59,18 @@ def extract_youtube_video_id(url: str) -> str | None:
     return None
 
 
-def _probe_streams(file_path: Path) -> tuple[str | None, str | None, int | None]:
+def _probe_streams(file_path: Path) -> tuple[str | None, str | None, int | None, float | None]:
     result = subprocess.run(
-        ["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,codec_name,height", "-of", "json", str(file_path)],
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "stream=codec_type,codec_name,height:format=duration",
+            "-of",
+            "json",
+            str(file_path),
+        ],
         capture_output=True,
         text=True,
         timeout=30,
@@ -71,18 +80,30 @@ def _probe_streams(file_path: Path) -> tuple[str | None, str | None, int | None]
     streams = data.get("streams", [])
     video = next((s for s in streams if s.get("codec_type") == "video"), None)
     audio = next((s for s in streams if s.get("codec_type") == "audio"), None)
+    duration = data.get("format", {}).get("duration")
     return (
         video.get("codec_name") if video else None,
         audio.get("codec_name") if audio else None,
         video.get("height") if video else None,
+        float(duration) if duration else None,
     )
+
+
+def probe_duration_seconds(file_path: Path) -> int | None:
+    """Public helper for callers that just want duration (e.g. a directly uploaded video, which
+    has no yt-dlp metadata to supply it)."""
+    try:
+        _, _, _, duration = _probe_streams(file_path)
+        return int(duration) if duration else None
+    except (subprocess.SubprocessError, OSError):
+        return None
 
 
 def _ensure_browser_compatible(file_path: Path, request_dir: Path) -> Path:
     """Only re-encodes when the source isn't already H.264/AAC/<=720p -- avoids unnecessary
     transcoding for sources that are already browser/Android compatible.
     """
-    video_codec, audio_codec, height = _probe_streams(file_path)
+    video_codec, audio_codec, height, _duration = _probe_streams(file_path)
     needs_transcode = video_codec != "h264" or audio_codec != "aac" or (height is not None and height > 720)
     if not needs_transcode:
         return file_path
@@ -123,6 +144,16 @@ def _ensure_browser_compatible(file_path: Path, request_dir: Path) -> Path:
 def _set_stage(db, asset: MediaAsset, stage: str) -> None:
     asset.processing_stage = stage
     db.commit()
+
+
+def create_scratch_dir() -> Path:
+    """A fresh per-upload scratch directory under the same temp root the YouTube pipeline uses --
+    shared purely as scratch space for media processing, not YouTube-specific in itself."""
+    base = Path(settings.youtube_temp_dir)
+    base.mkdir(parents=True, exist_ok=True)
+    scratch_dir = base / uuid.uuid4().hex
+    scratch_dir.mkdir(parents=True, exist_ok=False)
+    return scratch_dir
 
 
 def _upload_thumbnail(source_url: str, media_asset_id: int) -> str | None:
@@ -203,4 +234,48 @@ def process_library_video(media_asset_id: int) -> None:
     finally:
         if request_dir is not None:
             youtube_service.cleanup_dir(request_dir)
+        db.close()
+
+
+def process_uploaded_video(media_asset_id: int, file_path: str, scratch_dir: str) -> None:
+    """Same normalize -> upload pipeline as process_library_video, minus the download step (the
+    file's already local, written by the upload endpoint before this background task starts) --
+    shares the same concurrency semaphore, since it's just as CPU-heavy once transcoding.
+    """
+    db = SessionLocal()
+    request_dir = Path(scratch_dir)
+    try:
+        asset = db.get(MediaAsset, media_asset_id)
+        if asset is None:
+            return
+
+        with _PROCESSING_SEMAPHORE:
+            asset.status = MediaAssetStatus.processing
+            db.commit()
+
+            try:
+                _set_stage(db, asset, "processing")
+                final_path = _ensure_browser_compatible(Path(file_path), request_dir)
+
+                _set_stage(db, asset, "uploading")
+                video_object_key = f"videos/{asset.id}/{uuid.uuid4().hex}.mp4"
+                storage_service.upload_file(video_object_key, str(final_path), "video/mp4")
+
+                asset.object_key = video_object_key
+                asset.bucket = settings.minio_bucket
+                asset.mime_type = "video/mp4"
+                asset.size_bytes = final_path.stat().st_size
+                asset.duration_seconds = probe_duration_seconds(final_path)
+                asset.status = MediaAssetStatus.ready
+                asset.processing_stage = None
+                asset.error_message = None
+                db.commit()
+            except Exception:
+                logger.exception("Failed to process uploaded video %s", media_asset_id)
+                asset.status = MediaAssetStatus.failed
+                asset.processing_stage = None
+                asset.error_message = "Failed to process this video. Please try again."
+                db.commit()
+    finally:
+        youtube_service.cleanup_dir(request_dir)
         db.close()
