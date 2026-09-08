@@ -32,12 +32,14 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm bg-surface-container-low rounded-2xl p-8 card-border">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-on-primary-container">school</span>
-          </div>
+          <img
+            src="/app-icon.png"
+            alt="SchoolSocialsConnect"
+            className="w-11 h-11 rounded-xl shadow-md object-contain shrink-0"
+          />
           <div>
             <h1 className="font-headline-sm text-headline-sm font-bold text-primary leading-tight">SchoolSocials</h1>
-            <p className="font-label-md text-label-md text-on-surface-variant">Institutional Innovation</p>
+            <p className="font-label-md text-label-md text-on-surface-variant">Social Media Manager</p>
           </div>
         </div>
 

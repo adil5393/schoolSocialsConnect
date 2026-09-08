@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import SmartClassSidebar from './SmartClassSidebar';
+import { useSidebar } from '../../context/SidebarContext';
 
 export default function SmartClassLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isCollapsed } = useSidebar();
 
   return (
-    <div className="bg-background text-on-background min-h-screen flex flex-col antialiased">
+    <div className="bg-background text-on-background min-h-screen flex flex-col antialiased overflow-x-hidden">
       {/* Desktop Sidebar */}
       <SmartClassSidebar />
 
@@ -19,10 +21,12 @@ export default function SmartClassLayout() {
           />
           <div className="absolute left-0 top-0 bottom-0 w-72 bg-surface-container-low p-4 flex flex-col shadow-2xl border-r border-outline-variant/20 z-50">
             <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-secondary-container flex items-center justify-center">
-                  <span className="material-symbols-outlined text-on-secondary-container text-sm font-bold">school</span>
-                </div>
+              <div className="flex items-center gap-2.5">
+                <img
+                  src="/app-icon.png"
+                  alt="SchoolSocialsConnect"
+                  className="w-8 h-8 rounded-lg shadow-sm object-contain"
+                />
                 <span className="font-headline-sm font-bold text-secondary">Smart Class</span>
               </div>
               <button
@@ -40,7 +44,11 @@ export default function SmartClassLayout() {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen relative w-full">
+      <div
+        className={`flex-1 ${
+          isCollapsed ? 'md:ml-20' : 'md:ml-64'
+        } transition-all duration-300 ease-in-out flex flex-col min-h-screen relative w-full overflow-x-hidden`}
+      >
         <Outlet context={{ setMobileMenuOpen }} />
       </div>
     </div>

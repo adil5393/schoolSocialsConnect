@@ -39,9 +39,13 @@ export default function SmartClassTopBar({ breadcrumbs = [], onToggleMobileMenu 
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           <Link
             to="/smart-class"
-            className="font-headline-sm text-headline-sm font-bold text-secondary hover:text-secondary-fixed transition-colors flex items-center gap-1.5 shrink-0"
+            className="font-headline-sm text-headline-sm font-bold text-secondary hover:text-secondary-fixed transition-colors flex items-center gap-2 shrink-0"
           >
-            <span className="material-symbols-outlined text-[20px]">school</span>
+            <img
+              src="/app-icon.png"
+              alt="Smart Class"
+              className="w-6 h-6 rounded-md object-contain shrink-0"
+            />
             <span>Smart Class</span>
           </Link>
 

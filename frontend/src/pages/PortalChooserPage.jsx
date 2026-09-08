@@ -11,11 +11,13 @@ export default function PortalChooserPage() {
       <div className="absolute right-1/4 bottom-1/4 w-96 h-96 bg-secondary/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-3xl text-center relative z-10">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-container to-secondary-container flex items-center justify-center mx-auto mb-6 shadow-xl">
-          <span className="material-symbols-outlined text-on-primary-container text-3xl font-bold">school</span>
-        </div>
+        <img
+          src="/app-icon.png"
+          alt="SchoolSocialsConnect"
+          className="w-20 h-20 rounded-3xl shadow-2xl object-contain mx-auto mb-6 hover:scale-105 transition-transform"
+        />
         <h1 className="font-headline-lg text-3xl md:text-4xl font-black text-on-surface mb-3 tracking-tight">
-          School Platform Workspaces
+          SchoolSocialsConnect
         </h1>
         <p className="font-body-md text-sm md:text-base text-on-surface-variant mb-10 max-w-lg mx-auto">
           Two dedicated, independent workspaces built for institutional communication and digital teaching.

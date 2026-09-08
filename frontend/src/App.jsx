@@ -34,15 +34,17 @@ import AdminLibraryManagementPage from './pages/smartclass/admin/AdminLibraryMan
 import SmartClassLoginPage from './pages/SmartClassLoginPage';
 import SmartClassAdminUsersPage from './pages/SmartClassAdminUsersPage';
 import { AuthProvider as SmartClassAuthProvider, ProtectedRoute as SmartClassProtectedRoute } from './lib/smartClassAuth.jsx';
+import { SidebarProvider } from './context/SidebarContext';
 
 import PortalChooserPage from './pages/PortalChooserPage';
 
 export default function App() {
   return (
-    <SocialAuthProvider>
-      <SmartClassAuthProvider>
-        <Routes>
-          <Route path="/" element={<PortalChooserPage />} />
+    <SidebarProvider>
+      <SocialAuthProvider>
+        <SmartClassAuthProvider>
+          <Routes>
+            <Route path="/" element={<PortalChooserPage />} />
 
           {/* WORKSPACE 1: Social Media Manager */}
           <Route path="/login" element={<LoginPage />} />
@@ -103,6 +105,7 @@ export default function App() {
         </Routes>
       </SmartClassAuthProvider>
     </SocialAuthProvider>
-  );
+  </SidebarProvider>
+);
 }
 

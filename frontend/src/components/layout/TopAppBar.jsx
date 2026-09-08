@@ -33,8 +33,13 @@ export default function TopAppBar({ title, showSearch = false, searchPlaceholder
             <span className="material-symbols-outlined">menu</span>
           </button>
         )}
-        <Link to="/dashboard" className="font-headline-sm text-headline-sm font-bold text-primary truncate">
-          SchoolSocials
+        <Link to="/dashboard" className="font-headline-sm text-headline-sm font-bold text-primary truncate flex items-center gap-2">
+          <img
+            src="/app-icon.png"
+            alt="SchoolSocials"
+            className="w-6 h-6 rounded-md object-contain shrink-0"
+          />
+          <span>SchoolSocials</span>
         </Link>
       </div>
 
