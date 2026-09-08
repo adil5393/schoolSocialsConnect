@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { RESOURCE_TYPE_CONFIG } from './ResourceCard';
 
 export default function TeachPresentMode({
@@ -13,29 +13,65 @@ export default function TeachPresentMode({
   const [showDrawer, setShowDrawer] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [chalkboardMode, setChalkboardMode] = useState(false);
-  const [videoSpeed, setVideoSpeed] = useState(1);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   const containerRef = useRef(null);
   const videoRef = useRef(null);
 
+  // Check if current material is a presentation
+  const resType = (material?.resource_type || material?.media_type || 'video').toLowerCase();
+  const isPresentation =
+    resType === 'presentation' ||
+    resType === 'document' ||
+    (material?.slide_count && material?.slide_count > 0) ||
+    (material?.slide_urls && material?.slide_urls.length > 0) ||
+    (material?.title && material?.title.toLowerCase().match(/\.(ppt|pptx)$/));
+
+  const slideUrls = material?.slide_urls || [];
+  const totalSlides = slideUrls.length || material?.slide_count || 0;
+
+  // Reset slide index when material changes
+  useEffect(() => {
+    setCurrentSlideIndex(0);
+    setZoomLevel(1);
+  }, [material?.id]);
+
+  // Preload neighboring presentation slides
+  useEffect(() => {
+    if (slideUrls.length === 0) return;
+    const preload = [currentSlideIndex - 1, currentSlideIndex + 1, currentSlideIndex + 2].filter(
+      (idx) => idx >= 0 && idx < slideUrls.length
+    );
+    preload.forEach((idx) => {
+      const img = new Image();
+      img.src = slideUrls[idx];
+    });
+  }, [currentSlideIndex, slideUrls]);
+
   // Find currentIndex in allMaterialsInTopic
-  const currentIndex = allMaterialsInTopic.findIndex((m) => m.id === material?.id);
-  const hasPrev = currentIndex > 0;
-  const hasNext = currentIndex >= 0 && currentIndex < allMaterialsInTopic.length - 1;
+  const currentMaterialIndex = allMaterialsInTopic.findIndex((m) => m.id === material?.id);
+  const hasPrevMaterial = currentMaterialIndex > 0;
+  const hasNextMaterial = currentMaterialIndex >= 0 && currentMaterialIndex < allMaterialsInTopic.length - 1;
 
-  const handlePrev = () => {
-    if (hasPrev && onSelectMaterial) {
-      onSelectMaterial(allMaterialsInTopic[currentIndex - 1]);
+  const handlePrevSlide = useCallback(() => {
+    if (isPresentation && totalSlides > 0 && currentSlideIndex > 0) {
+      setCurrentSlideIndex((prev) => prev - 1);
+      setZoomLevel(1);
+    } else if (hasPrevMaterial && onSelectMaterial) {
+      onSelectMaterial(allMaterialsInTopic[currentMaterialIndex - 1]);
       setZoomLevel(1);
     }
-  };
+  }, [isPresentation, totalSlides, currentSlideIndex, hasPrevMaterial, onSelectMaterial, allMaterialsInTopic, currentMaterialIndex]);
 
-  const handleNext = () => {
-    if (hasNext && onSelectMaterial) {
-      onSelectMaterial(allMaterialsInTopic[currentIndex + 1]);
+  const handleNextSlide = useCallback(() => {
+    if (isPresentation && totalSlides > 0 && currentSlideIndex < totalSlides - 1) {
+      setCurrentSlideIndex((prev) => prev + 1);
+      setZoomLevel(1);
+    } else if (hasNextMaterial && onSelectMaterial) {
+      onSelectMaterial(allMaterialsInTopic[currentMaterialIndex + 1]);
       setZoomLevel(1);
     }
-  };
+  }, [isPresentation, totalSlides, currentSlideIndex, hasNextMaterial, onSelectMaterial, allMaterialsInTopic, currentMaterialIndex]);
 
   const toggleFullscreen = async () => {
     try {
@@ -47,31 +83,37 @@ export default function TeachPresentMode({
         setIsFullscreen(false);
       }
     } catch {
-      // fallback
+      setIsFullscreen((v) => !v);
     }
   };
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
       if (e.key === 'Escape') {
         if (!document.fullscreenElement) {
           onClose();
         }
-      } else if (e.key === 'ArrowLeft') {
-        handlePrev();
-      } else if (e.key === 'ArrowRight') {
-        handleNext();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        handlePrevSlide();
+      } else if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        handleNextSlide();
       } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
         toggleFullscreen();
       } else if (e.key === 'l' || e.key === 'L') {
+        e.preventDefault();
         setLaserActive((v) => !v);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, allMaterialsInTopic, onClose]);
+  }, [handlePrevSlide, handleNextSlide, onClose]);
 
   // Track fullscreen changes
   useEffect(() => {
@@ -89,8 +131,9 @@ export default function TeachPresentMode({
     }
   };
 
-  const resType = (material?.resource_type || material?.media_type || 'video').toLowerCase();
-  const config = RESOURCE_TYPE_CONFIG[resType] || { label: 'Resource', icon: 'description' };
+  const config = isPresentation
+    ? RESOURCE_TYPE_CONFIG.presentation
+    : RESOURCE_TYPE_CONFIG[resType] || { label: 'Resource', icon: 'description' };
 
   if (!material) return null;
 
@@ -105,7 +148,7 @@ export default function TeachPresentMode({
       {/* Laser Pointer Dot */}
       {laserActive && (
         <div
-          className="fixed pointer-events-none z-50 w-6 h-6 rounded-full bg-red-500 shadow-[0_0_20px_6px_rgba(239,68,68,0.9)] transform -translate-x-1/2 -translate-y-1/2 transition-transform duration-75 animate-pulse"
+          className="fixed pointer-events-none z-50 w-6 h-6 rounded-full bg-red-500 shadow-[0_0_24px_8px_rgba(239,68,68,0.95)] transform -translate-x-1/2 -translate-y-1/2 transition-transform duration-75 animate-pulse"
           style={{ left: laserPos.x, top: laserPos.y }}
         />
       )}
@@ -137,7 +180,12 @@ export default function TeachPresentMode({
 
         {/* Center: Title & Type */}
         <div className="text-center px-4 max-w-md truncate hidden md:block">
-          <p className="font-headline-sm text-sm font-bold text-on-surface truncate">{material.title}</p>
+          <p className="font-headline-sm text-sm font-bold text-on-surface truncate flex items-center gap-2 justify-center">
+            <span className={`material-symbols-outlined text-[18px] ${config.color || 'text-secondary'}`}>
+              {config.icon}
+            </span>
+            <span className="truncate">{material.title}</span>
+          </p>
         </div>
 
         {/* Right: Presentation Tools */}
@@ -203,7 +251,47 @@ export default function TeachPresentMode({
       {/* Main Presentation Stage */}
       <main className="flex-1 relative flex items-center justify-center overflow-hidden p-2 md:p-4">
         {/* Content Viewer based on Resource Type */}
-        {material.media_type === 'video' ? (
+        {isPresentation && totalSlides > 0 ? (
+          /* Presentation Slide Deck View */
+          <div className="w-full h-full flex flex-col items-center justify-center relative">
+            <div
+              className="transition-transform duration-150 flex items-center justify-center max-w-full max-h-full"
+              style={{ transform: `scale(${zoomLevel})` }}
+            >
+              <img
+                key={currentSlideIndex}
+                src={slideUrls[currentSlideIndex]}
+                alt={`Slide ${currentSlideIndex + 1}`}
+                className="max-w-full max-h-[82vh] object-contain rounded-xl shadow-2xl border border-white/10 select-none animate-in fade-in duration-150"
+              />
+            </div>
+
+            {/* Slide Navigation Overlay Buttons */}
+            <button
+              type="button"
+              onClick={handlePrevSlide}
+              disabled={currentSlideIndex === 0 && !hasPrevMaterial}
+              className={`absolute left-2 md:left-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-surface-container-high/70 hover:bg-surface-container-high text-on-surface border border-outline-variant/30 backdrop-blur-md shadow-xl transition-all cursor-pointer ${
+                currentSlideIndex === 0 && !hasPrevMaterial ? 'opacity-0 pointer-events-none' : 'opacity-80 hover:opacity-100 hover:scale-110'
+              }`}
+              title="Previous Slide (← / PageUp)"
+            >
+              <span className="material-symbols-outlined text-[24px]">chevron_left</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleNextSlide}
+              disabled={currentSlideIndex === totalSlides - 1 && !hasNextMaterial}
+              className={`absolute right-2 md:right-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-surface-container-high/70 hover:bg-surface-container-high text-on-surface border border-outline-variant/30 backdrop-blur-md shadow-xl transition-all cursor-pointer ${
+                currentSlideIndex === totalSlides - 1 && !hasNextMaterial ? 'opacity-0 pointer-events-none' : 'opacity-80 hover:opacity-100 hover:scale-110'
+              }`}
+              title="Next Slide (→ / Space / PageDown)"
+            >
+              <span className="material-symbols-outlined text-[24px]">chevron_right</span>
+            </button>
+          </div>
+        ) : material.media_type === 'video' ? (
           <div className="w-full h-full max-w-6xl max-h-[85vh] flex flex-col items-center justify-center">
             {material.file_url ? (
               <div className="relative w-full h-full bg-black rounded-2xl overflow-hidden shadow-2xl border border-outline-variant/20 flex flex-col">
@@ -319,15 +407,16 @@ export default function TeachPresentMode({
                 {material.description}
               </p>
             )}
-            {material.file_url && (
+            {(material.original_file_url || material.file_url) && (
               <a
-                href={material.file_url}
+                href={material.original_file_url || material.file_url}
                 target="_blank"
                 rel="noreferrer"
+                download
                 className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container font-bold rounded-xl text-sm hover:opacity-95 shadow-lg transition-transform hover:scale-105"
               >
-                <span className="material-symbols-outlined text-[20px]">open_in_new</span>
-                <span>Open Resource</span>
+                <span className="material-symbols-outlined text-[20px]">download</span>
+                <span>Download Resource</span>
               </a>
             )}
           </div>
@@ -389,56 +478,67 @@ export default function TeachPresentMode({
 
       {/* Bottom Classroom Controls Bar */}
       <footer className="h-16 px-4 md:px-8 bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/15 flex items-center justify-between shrink-0 z-40">
-        {/* Left: Previous Resource Button */}
+        {/* Left: Previous Resource / Slide Button */}
         <button
           type="button"
-          onClick={handlePrev}
-          disabled={!hasPrev}
+          onClick={handlePrevSlide}
+          disabled={isPresentation ? currentSlideIndex === 0 && !hasPrevMaterial : !hasPrevMaterial}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer border ${
-            hasPrev
+            (isPresentation ? currentSlideIndex > 0 || hasPrevMaterial : hasPrevMaterial)
               ? 'bg-surface-container-high hover:bg-surface-variant text-on-surface border-outline-variant/30 hover:border-secondary/40 shadow-sm'
               : 'opacity-40 cursor-not-allowed border-transparent text-on-surface-variant/50'
           }`}
-          title="Previous Resource (Left Arrow)"
+          title="Previous (Left Arrow / PageUp)"
         >
           <span className="material-symbols-outlined text-[20px]">arrow_back_ios</span>
-          <span className="hidden sm:inline">Previous</span>
+          <span className="hidden sm:inline">{isPresentation && currentSlideIndex > 0 ? 'Prev Slide' : 'Previous'}</span>
         </button>
 
-        {/* Center: Topic Position & Navigation indicators */}
+        {/* Center: Slide Counter or Topic Position */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            {allMaterialsInTopic.map((m, idx) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => onSelectMaterial && onSelectMaterial(m)}
-                className={`h-2 rounded-full transition-all cursor-pointer ${
-                  m.id === material.id ? 'w-8 bg-secondary' : 'w-2 bg-outline-variant/40 hover:bg-outline-variant'
-                }`}
-                title={`Jump to: ${m.title}`}
-              />
-            ))}
-          </div>
+          {isPresentation && totalSlides > 0 ? (
+            <div className="flex items-center gap-2 bg-surface-container-high px-3 py-1 rounded-lg border border-outline-variant/20">
+              <span className="material-symbols-outlined text-orange-400 text-[16px]">slideshow</span>
+              <span className="text-xs md:text-sm font-bold text-on-surface">
+                Slide <span className="text-secondary">{currentSlideIndex + 1}</span> of {totalSlides}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              {allMaterialsInTopic.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => onSelectMaterial && onSelectMaterial(m)}
+                  className={`h-2 rounded-full transition-all cursor-pointer ${
+                    m.id === material.id ? 'w-8 bg-secondary' : 'w-2 bg-outline-variant/40 hover:bg-outline-variant'
+                  }`}
+                  title={`Jump to: ${m.title}`}
+                />
+              ))}
+            </div>
+          )}
 
-          <span className="text-xs font-bold text-on-surface-variant hidden md:inline">
-            {currentIndex + 1} of {allMaterialsInTopic.length || 1}
-          </span>
+          {allMaterialsInTopic.length > 1 && (
+            <span className="text-xs font-bold text-on-surface-variant hidden md:inline">
+              Resource {currentMaterialIndex + 1} of {allMaterialsInTopic.length}
+            </span>
+          )}
         </div>
 
-        {/* Right: Next Resource Button */}
+        {/* Right: Next Resource / Slide Button */}
         <button
           type="button"
-          onClick={handleNext}
-          disabled={!hasNext}
+          onClick={handleNextSlide}
+          disabled={isPresentation ? currentSlideIndex === totalSlides - 1 && !hasNextMaterial : !hasNextMaterial}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer border ${
-            hasNext
+            (isPresentation ? currentSlideIndex < totalSlides - 1 || hasNextMaterial : hasNextMaterial)
               ? 'bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container hover:opacity-90 shadow-md'
               : 'opacity-40 cursor-not-allowed border-transparent text-on-surface-variant/50'
           }`}
-          title="Next Resource (Right Arrow)"
+          title="Next (Right Arrow / Space / PageDown)"
         >
-          <span className="hidden sm:inline">Next</span>
+          <span className="hidden sm:inline">{isPresentation && currentSlideIndex < totalSlides - 1 ? 'Next Slide' : 'Next'}</span>
           <span className="material-symbols-outlined text-[20px]">arrow_forward_ios</span>
         </button>
       </footer>

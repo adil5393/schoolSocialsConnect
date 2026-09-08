@@ -57,6 +57,10 @@ class Settings(BaseSettings):
     # (stay "pending") rather than piling on and fighting for the same CPU.
     video_processing_max_concurrent: int = 2
 
+    # Presentation processing (PPT/PPTX -> PDF -> slide images)
+    presentation_temp_dir: str = "/tmp/school-socials-presentations"
+    presentation_conversion_timeout: int = 180
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

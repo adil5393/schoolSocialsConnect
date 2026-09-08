@@ -3,14 +3,16 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # ffmpeg is required by the YouTube Downloader feature (merging separate video/audio streams,
-# MP3/M4A conversion) -- installed as its own layer so it's cached independently of requirements.txt.
+# MP3/M4A conversion). libreoffice-impress and poppler-utils are required for PowerPoint (PPT/PPTX)
+# conversion to PDF and slide image generation.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg \
+    && apt-get install -y --no-install-recommends ffmpeg libreoffice-impress libreoffice-core poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
+
 
 COPY . .
 

@@ -77,7 +77,7 @@ def _extract_info(url: str) -> dict:
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             return ydl.extract_info(url, download=False)
-    except yt_dlp.utils.DownloadError as exc:
+    except (yt_dlp.utils.DownloadError, Exception) as exc:
         raise YouTubeError(_friendly_error(str(exc)), 502) from exc
 
 

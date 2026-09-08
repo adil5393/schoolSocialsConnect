@@ -9,6 +9,7 @@ function formatDuration(seconds) {
 }
 
 export const RESOURCE_TYPE_CONFIG = {
+  presentation: { label: 'Presentation', icon: 'slideshow', color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/30' },
   video: { label: 'Video', icon: 'play_circle', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/30' },
   pdf: { label: 'PDF Document', icon: 'picture_as_pdf', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30' },
   image: { label: 'Diagram / Image', icon: 'image', color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/30' },
@@ -28,6 +29,7 @@ export default function ResourceCard({
   onPresent,
   onEdit,
   onDelete,
+  onRetry,
   showCurriculumContext = false,
   compact = false,
 }) {
@@ -37,12 +39,24 @@ export default function ResourceCard({
   const [copied, setCopied] = useState(false);
 
   const resType = (material.resource_type || material.media_type || 'video').toLowerCase();
-  const config = RESOURCE_TYPE_CONFIG[resType] || {
-    label: material.media_type || 'Resource',
-    icon: 'description',
-    color: 'text-secondary',
-    bg: 'bg-secondary/10 border-secondary/30',
-  };
+  const isPresentation =
+    resType === 'presentation' ||
+    resType === 'document' ||
+    (material.slide_count && material.slide_count > 0) ||
+    (material.slide_urls && material.slide_urls.length > 0) ||
+    (material.title && material.title.toLowerCase().match(/\.(ppt|pptx)$/));
+
+  const isProcessing = material.status === 'pending' || material.status === 'processing';
+  const isFailed = material.status === 'failed';
+
+  const config = isPresentation
+    ? RESOURCE_TYPE_CONFIG.presentation
+    : RESOURCE_TYPE_CONFIG[resType] || {
+        label: material.media_type || 'Resource',
+        icon: 'description',
+        color: 'text-secondary',
+        bg: 'bg-secondary/10 border-secondary/30',
+      };
 
   const handleToggleFav = (e) => {
     e.stopPropagation();
@@ -58,12 +72,20 @@ export default function ResourceCard({
 
   const handleCopyLink = (e) => {
     e.stopPropagation();
-    if (material.file_url) {
-      navigator.clipboard.writeText(material.file_url);
+    const link = material.original_file_url || material.file_url;
+    if (link) {
+      navigator.clipboard.writeText(link);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  // Thumbnail image priority: presentation slide thumb -> thumbnail_url -> image file_url
+  const previewImage =
+    (material.slide_thumbnail_urls && material.slide_thumbnail_urls[0]) ||
+    (material.slide_urls && material.slide_urls[0]) ||
+    material.thumbnail_url ||
+    (material.media_type === 'image' ? material.file_url : null);
 
   return (
     <div
@@ -141,7 +163,7 @@ export default function ResourceCard({
                       {isSavedOffline ? 'Remove Offline' : 'Save for Offline'}
                     </button>
 
-                    {material.file_url && (
+                    {(material.original_file_url || material.file_url) && (
                       <button
                         type="button"
                         onClick={handleCopyLink}
@@ -151,6 +173,34 @@ export default function ResourceCard({
                           {copied ? 'check' : 'link'}
                         </span>
                         {copied ? 'Link Copied!' : 'Copy Direct Link'}
+                      </button>
+                    )}
+
+                    {(material.original_file_url || material.file_url) && (
+                      <a
+                        href={material.original_file_url || material.file_url}
+                        download
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-on-surface hover:bg-surface-variant flex items-center gap-2 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">download</span>
+                        Download File
+                      </a>
+                    )}
+
+                    {onRetry && isFailed && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuOpen(false);
+                          onRetry(material);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg text-secondary hover:bg-surface-variant flex items-center gap-2 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">refresh</span>
+                        Retry Slide Conversion
                       </button>
                     )}
 
@@ -195,9 +245,9 @@ export default function ResourceCard({
           onClick={() => onOpen && onOpen(material)}
           className="relative w-full h-32 rounded-lg bg-surface-dim overflow-hidden border border-outline-variant/15 flex items-center justify-center cursor-pointer mb-3 group-hover:border-secondary/40 transition-colors"
         >
-          {material.thumbnail_url || (material.media_type === 'image' && material.file_url) ? (
+          {previewImage ? (
             <img
-              src={material.thumbnail_url || material.file_url}
+              src={previewImage}
               alt={material.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
@@ -209,19 +259,43 @@ export default function ResourceCard({
             </div>
           )}
 
-          {/* Quick Play Overlay */}
+          {/* Quick Play/View Overlay */}
           <div className="absolute inset-0 bg-background/30 group-hover:bg-background/10 transition-colors flex items-center justify-center">
             <div className="w-10 h-10 rounded-full bg-secondary-container/90 text-on-secondary-container flex items-center justify-center opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all shadow-lg">
               <span className="material-symbols-outlined text-[24px]">
-                {material.media_type === 'video' ? 'play_arrow' : material.media_type === 'image' ? 'visibility' : 'open_in_new'}
+                {isPresentation ? 'slideshow' : material.media_type === 'video' ? 'play_arrow' : material.media_type === 'image' ? 'visibility' : 'open_in_new'}
               </span>
             </div>
           </div>
 
-          {/* Duration Badge */}
+          {/* Slide Count Badge for Presentations */}
+          {isPresentation && material.slide_count != null && material.slide_count > 0 && (
+            <div className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded bg-black/85 backdrop-blur-sm text-[11px] font-bold text-orange-400 border border-orange-500/30 flex items-center gap-1">
+              <span className="material-symbols-outlined text-[13px]">slideshow</span>
+              <span>{material.slide_count} Slides</span>
+            </div>
+          )}
+
+          {/* Duration Badge for Videos */}
           {material.duration_seconds != null && (
             <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-background/85 backdrop-blur-sm text-[11px] font-semibold text-on-surface border border-outline-variant/30">
               {formatDuration(material.duration_seconds)}
+            </div>
+          )}
+
+          {/* Processing Status Badge */}
+          {isProcessing && (
+            <div className="absolute inset-x-0 bottom-0 bg-secondary-container/90 backdrop-blur-xs text-on-secondary-container py-1 px-2 text-[10px] font-bold flex items-center justify-center gap-1">
+              <span className="material-symbols-outlined text-[12px] animate-spin">progress_activity</span>
+              <span>Processing Presentation Slides...</span>
+            </div>
+          )}
+
+          {/* Failed Status Badge */}
+          {isFailed && (
+            <div className="absolute inset-x-0 bottom-0 bg-error-container/90 backdrop-blur-xs text-on-error-container py-1 px-2 text-[10px] font-bold flex items-center justify-center gap-1">
+              <span className="material-symbols-outlined text-[12px]">error</span>
+              <span>Slide Preview Failed</span>
             </div>
           )}
         </div>
@@ -265,10 +339,17 @@ export default function ResourceCard({
         <button
           type="button"
           onClick={() => onOpen && onOpen(material)}
-          className="w-full py-1.5 px-3 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-outline-variant/20"
+          className={`w-full py-1.5 px-3 rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer border ${
+            isPresentation
+              ? 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 border-orange-500/30'
+              : 'bg-surface-container-high hover:bg-surface-variant text-on-surface border-outline-variant/20'
+          }`}
+          title={isPresentation ? 'Open in In-App Presentation Viewer' : 'Open Resource'}
         >
-          <span className="material-symbols-outlined text-[16px]">visibility</span>
-          <span>Open</span>
+          <span className="material-symbols-outlined text-[16px]">
+            {isPresentation ? 'slideshow' : 'visibility'}
+          </span>
+          <span>{isPresentation ? 'Presentation' : 'Open'}</span>
         </button>
 
         <button

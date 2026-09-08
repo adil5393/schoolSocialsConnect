@@ -61,6 +61,13 @@ class MaterialOut(BaseModel):
     # The material's own content -- a streamable video URL, a viewable image URL, or a
     # downloadable/openable PDF or PowerPoint URL, depending on media_type.
     file_url: str | None
+    # Presentation / Slide viewer fields
+    slide_count: int | None = None
+    slide_urls: list[str] = []
+    slide_thumbnail_urls: list[str] = []
+    preview_pdf_url: str | None = None
+    original_file_url: str | None = None
+    preview_type: str | None = None
     created_at: datetime
 
 

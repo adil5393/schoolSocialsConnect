@@ -17,3 +17,5 @@ cryptography==43.0.1
 # Unpinned deliberately: yt-dlp needs frequent updates to keep working as YouTube changes its
 # site/extraction internals -- pinning would silently rot.
 yt-dlp
+pymupdf==1.24.10
+pillow==10.4.0

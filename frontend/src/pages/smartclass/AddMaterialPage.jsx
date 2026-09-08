@@ -142,6 +142,7 @@ export default function AddMaterialPage() {
   };
 
   // Handle File upload change
+  // Handle File upload change
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -149,13 +150,20 @@ export default function AddMaterialPage() {
     const inferredTitle = file.name.replace(/\.[^/.]+$/, '');
     setTitle((cur) => cur || inferredTitle);
 
-    if (file.type.startsWith('video/')) {
+    const nameLower = file.name.toLowerCase();
+    if (file.type.startsWith('video/') || /\.(mp4|mov|webm|mkv|avi)$/i.test(nameLower)) {
       setResourceType('video');
-    } else if (file.type === 'application/pdf') {
+    } else if (file.type === 'application/pdf' || /\.pdf$/i.test(nameLower)) {
       setResourceType('pdf');
-    } else if (file.type.startsWith('image/')) {
+    } else if (file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(nameLower)) {
       setResourceType('image');
       setFilePreviewUrl(URL.createObjectURL(file));
+    } else if (
+      file.type.includes('powerpoint') ||
+      file.type.includes('presentation') ||
+      /\.(ppt|pptx|pps|ppsx|odp|key)$/i.test(nameLower)
+    ) {
+      setResourceType('presentation');
     } else {
       setResourceType('document');
     }
@@ -252,20 +260,58 @@ export default function AddMaterialPage() {
     setErrorMessage('');
   };
 
-  // --- Success State Screen ---
-  if (savedMaterial && savedMaterial.status === 'ready') {
+  // --- Success / Processing State Screen ---
+  if (savedMaterial) {
+    const isProcessing = savedMaterial.status === 'pending' || savedMaterial.status === 'processing';
+    const isFailed = savedMaterial.status === 'failed';
+
     return (
       <div className="flex-1 flex flex-col min-h-screen bg-background">
         <SmartClassTopBar onToggleMobileMenu={() => setMobileMenuOpen && setMobileMenuOpen(true)} />
         <main className="flex-1 flex items-center justify-center p-4">
           <div className="max-w-xl w-full bg-surface-container-low rounded-3xl p-8 border border-secondary/40 shadow-2xl text-center flex flex-col items-center gap-5">
-            <div className="w-16 h-16 rounded-2xl bg-secondary/15 border border-secondary/30 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[36px] text-secondary">check_circle</span>
+            <div
+              className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
+                isProcessing
+                  ? 'bg-amber-500/15 border border-amber-500/30 text-amber-500'
+                  : isFailed
+                  ? 'bg-amber-500/15 border border-amber-500/30 text-amber-500'
+                  : 'bg-secondary/15 border border-secondary/30 text-secondary'
+              }`}
+            >
+              {isProcessing ? (
+                <span className="w-8 h-8 border-3 border-secondary border-t-transparent rounded-full animate-spin" />
+              ) : isFailed ? (
+                <span className="material-symbols-outlined text-[36px]">info</span>
+              ) : (
+                <span className="material-symbols-outlined text-[36px]">check_circle</span>
+              )}
             </div>
 
             <div>
-              <span className="text-xs uppercase font-bold tracking-wider text-secondary">Material Successfully Saved</span>
+              <span className="text-xs uppercase font-bold tracking-wider text-secondary">
+                {isProcessing
+                  ? 'Material Saved — Processing Media'
+                  : isFailed
+                  ? 'Material Saved in Library'
+                  : 'Material Successfully Saved'}
+              </span>
               <h2 className="font-headline-md text-2xl font-bold text-on-surface mt-1">{savedMaterial.title}</h2>
+              {isProcessing && (
+                <p className="text-xs text-on-surface-variant mt-1.5 flex items-center justify-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
+                  <span>
+                    {savedMaterial.processing_stage
+                      ? `Stage: ${savedMaterial.processing_stage}...`
+                      : 'Converting slides & generating high-res previews...'}
+                  </span>
+                </p>
+              )}
+              {isFailed && (
+                <p className="text-xs text-on-surface-variant mt-1.5">
+                  {savedMaterial.error_message || 'Original file is safely stored. Presentation preview could not be generated.'}
+                </p>
+              )}
             </div>
 
             {/* Saved Location Card */}

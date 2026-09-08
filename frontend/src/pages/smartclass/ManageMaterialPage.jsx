@@ -5,6 +5,7 @@ import ResourceCard from '../../components/library/ResourceCard';
 import TeachPresentMode from '../../components/library/TeachPresentMode';
 import VideoPlayerModal from '../../components/library/VideoPlayerModal';
 import ImageViewerModal from '../../components/library/ImageViewerModal';
+import PresentationViewerModal from '../../components/library/PresentationViewerModal';
 import { apiFetch, ApiError } from '../../lib/smartClassAuth';
 
 export default function ManageMaterialPage() {
@@ -24,6 +25,7 @@ export default function ManageMaterialPage() {
   const [savingEdit, setSavingEdit] = useState(false);
 
   const [presentingMaterial, setPresentingMaterial] = useState(null);
+  const [presentingPresentation, setPresentingPresentation] = useState(null);
   const [playingVideo, setPlayingVideo] = useState(null);
   const [viewingImage, setViewingImage] = useState(null);
 
@@ -53,6 +55,15 @@ export default function ManageMaterialPage() {
     }
   };
 
+  const handleRetry = async (mat) => {
+    try {
+      const updated = await apiFetch(`/library/materials/${mat.id}/retry-processing`, { method: 'POST' });
+      setMaterials((prev) => prev.map((m) => (m.id === mat.id ? updated : m)));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to retry');
+    }
+  };
+
   const handleStartEdit = (mat) => {
     setEditingMaterial(mat);
     setEditTitle(mat.title);
@@ -77,6 +88,25 @@ export default function ManageMaterialPage() {
       setError(err instanceof ApiError ? err.message : 'Failed to update material');
     } finally {
       setSavingEdit(false);
+    }
+  };
+
+  const handleOpen = (mat) => {
+    const isPres =
+      (mat.resource_type || '').toLowerCase() === 'presentation' ||
+      (mat.media_type || '').toLowerCase() === 'document' ||
+      (mat.slide_count && mat.slide_count > 0) ||
+      (mat.slide_urls && mat.slide_urls.length > 0) ||
+      (mat.title && mat.title.toLowerCase().match(/\.(ppt|pptx)$/));
+
+    if (isPres) {
+      setPresentingPresentation(mat);
+    } else if (mat.media_type === 'video') {
+      setPlayingVideo(mat);
+    } else if (mat.media_type === 'image') {
+      setViewingImage(mat);
+    } else if (mat.file_url) {
+      window.open(mat.file_url, '_blank');
     }
   };
 
@@ -157,14 +187,11 @@ export default function ManageMaterialPage() {
                   key={mat.id}
                   material={mat}
                   showCurriculumContext
-                  onOpen={() => {
-                    if (mat.media_type === 'video') setPlayingVideo(mat);
-                    else if (mat.media_type === 'image') setViewingImage(mat);
-                    else if (mat.file_url) window.open(mat.file_url, '_blank');
-                  }}
+                  onOpen={() => handleOpen(mat)}
                   onPresent={() => setPresentingMaterial(mat)}
                   onEdit={handleStartEdit}
                   onDelete={handleDelete}
+                  onRetry={handleRetry}
                 />
               ))}
             </div>
@@ -241,6 +268,15 @@ export default function ManageMaterialPage() {
           allMaterialsInTopic={filteredMaterials}
           onClose={() => setPresentingMaterial(null)}
           onSelectMaterial={setPresentingMaterial}
+        />
+      )}
+
+      {/* In-App Presentation / PowerPoint Viewer */}
+      {presentingPresentation && (
+        <PresentationViewerModal
+          material={presentingPresentation}
+          onClose={() => setPresentingPresentation(null)}
+          onMaterialUpdated={() => loadMaterials()}
         />
       )}
 

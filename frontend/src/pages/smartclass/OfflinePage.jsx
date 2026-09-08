@@ -5,6 +5,7 @@ import ResourceCard from '../../components/library/ResourceCard';
 import TeachPresentMode from '../../components/library/TeachPresentMode';
 import VideoPlayerModal from '../../components/library/VideoPlayerModal';
 import ImageViewerModal from '../../components/library/ImageViewerModal';
+import PresentationViewerModal from '../../components/library/PresentationViewerModal';
 import { smartClassStore } from '../../lib/smartClassStore';
 
 export default function OfflinePage() {
@@ -14,6 +15,7 @@ export default function OfflinePage() {
 
   const [offlineItems, setOfflineItems] = useState([]);
   const [presentingMaterial, setPresentingMaterial] = useState(null);
+  const [presentingPresentation, setPresentingPresentation] = useState(null);
   const [playingVideo, setPlayingVideo] = useState(null);
   const [viewingImage, setViewingImage] = useState(null);
 
@@ -22,7 +24,16 @@ export default function OfflinePage() {
   }, []);
 
   const handleOpen = (material) => {
-    if (material.media_type === 'video') {
+    const isPres =
+      (material.resource_type || '').toLowerCase() === 'presentation' ||
+      (material.media_type || '').toLowerCase() === 'document' ||
+      (material.slide_count && material.slide_count > 0) ||
+      (material.slide_urls && material.slide_urls.length > 0) ||
+      (material.title && material.title.toLowerCase().match(/\.(ppt|pptx)$/));
+
+    if (isPres) {
+      setPresentingPresentation(material);
+    } else if (material.media_type === 'video') {
       setPlayingVideo(material);
     } else if (material.media_type === 'image') {
       setViewingImage(material);
@@ -101,6 +112,14 @@ export default function OfflinePage() {
           allMaterialsInTopic={offlineItems}
           onClose={() => setPresentingMaterial(null)}
           onSelectMaterial={setPresentingMaterial}
+        />
+      )}
+
+      {/* In-App Presentation / PowerPoint Viewer */}
+      {presentingPresentation && (
+        <PresentationViewerModal
+          material={presentingPresentation}
+          onClose={() => setPresentingPresentation(null)}
         />
       )}
 

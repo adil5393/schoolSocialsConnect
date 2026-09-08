@@ -1,3 +1,4 @@
+import json
 import uuid
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
@@ -37,23 +38,113 @@ from app.services.youtube_service import YouTubeError
 
 router = APIRouter(prefix="/library", tags=["library"])
 
-# Direct-upload counterpart to the paste-a-link flow.
-UPLOAD_MEDIA_TYPES: dict[str, MediaType] = {
-    "image/jpeg": MediaType.image,
-    "image/png": MediaType.image,
-    "image/webp": MediaType.image,
-    "image/gif": MediaType.image,
-    "image/svg+xml": MediaType.image,
-    "video/mp4": MediaType.video,
-    "video/quicktime": MediaType.video,
-    "video/webm": MediaType.video,
-    "video/x-matroska": MediaType.video,
-    "application/pdf": MediaType.pdf,
-    "application/vnd.ms-powerpoint": MediaType.document,
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation": MediaType.document,
-    "application/msword": MediaType.document,
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": MediaType.document,
+import logging
+import uuid
+
+logger = logging.getLogger(__name__)
+
+# Direct-upload MIME / extension mappings
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg", ".bmp", ".ico", ".tif", ".tiff"}
+PRESENTATION_EXTENSIONS = {".ppt", ".pptx", ".pps", ".ppsx", ".odp", ".pot", ".potx", ".key"}
+VIDEO_EXTENSIONS = {".mp4", ".mov", ".webm", ".mkv", ".avi", ".m4v", ".wmv", ".flv", ".3gp"}
+DOCUMENT_EXTENSIONS = {".pdf", ".doc", ".docx", ".txt", ".rtf", ".odt", ".csv", ".xls", ".xlsx"}
+
+PRESENTATION_MIME_TYPES = {
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/vnd.openxmlformats-officedocument.presentationml.slideshow",
+    "application/vnd.openxmlformats-officedocument.presentationml.template",
+    "application/vnd.oasis.opendocument.presentation",
+    "application/x-mspowerpoint",
+    "application/powerpoint",
+    "application/mspowerpoint",
+    "application/x-powerpoint",
 }
+
+
+def resolve_upload_media_type(
+    filename: str | None,
+    content_type: str | None,
+    resource_type: str | None = None,
+) -> tuple[MediaType, bool, str]:
+    """Resolves MediaType, is_presentation flag, and a safe MIME type for an uploaded file.
+    Safely inspects file extensions and does not reject generic browser MIME types like application/octet-stream.
+    """
+    clean_mime = (content_type or "").split(";")[0].strip().lower()
+    fn = filename or ""
+    suffix = ("." + fn.rsplit(".", 1)[-1].lower()) if "." in fn else ""
+
+    # 1. Check presentation by extension or explicit MIME
+    if suffix in PRESENTATION_EXTENSIONS or clean_mime in PRESENTATION_MIME_TYPES:
+        mime = clean_mime if clean_mime in PRESENTATION_MIME_TYPES else "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        return MediaType.document, True, mime
+
+    # 2. Check if client explicitly selected presentation resource type
+    if resource_type == "presentation":
+        if suffix == ".pdf" or clean_mime == "application/pdf":
+            return MediaType.pdf, True, clean_mime or "application/pdf"
+        return MediaType.document, True, clean_mime or "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+
+    # 3. Check image by extension or MIME
+    if suffix in IMAGE_EXTENSIONS or clean_mime.startswith("image/"):
+        if suffix in {".jpg", ".jpeg"} or clean_mime in {"image/jpeg", "image/jpg", "image/pjpeg"}:
+            return MediaType.image, False, "image/jpeg"
+        elif suffix == ".png" or clean_mime in {"image/png", "image/x-png"}:
+            return MediaType.image, False, "image/png"
+        elif suffix == ".webp" or clean_mime == "image/webp":
+            return MediaType.image, False, "image/webp"
+        elif suffix == ".gif" or clean_mime == "image/gif":
+            return MediaType.image, False, "image/gif"
+        elif suffix == ".svg" or clean_mime == "image/svg+xml":
+            return MediaType.image, False, "image/svg+xml"
+        mime = clean_mime if clean_mime.startswith("image/") else "image/jpeg"
+        return MediaType.image, False, mime
+
+    # 4. Check PDF by extension or MIME
+    if suffix == ".pdf" or clean_mime in {"application/pdf", "application/x-pdf"}:
+        return MediaType.pdf, False, "application/pdf"
+
+    # 5. Check video by extension or MIME
+    if suffix in VIDEO_EXTENSIONS or clean_mime.startswith("video/"):
+        if suffix in {".mp4", ".m4v"} or clean_mime == "video/mp4":
+            return MediaType.video, False, "video/mp4"
+        elif suffix == ".webm" or clean_mime == "video/webm":
+            return MediaType.video, False, "video/webm"
+        elif suffix == ".mov" or clean_mime == "video/quicktime":
+            return MediaType.video, False, "video/quicktime"
+        mime = clean_mime if clean_mime.startswith("video/") else "video/mp4"
+        return MediaType.video, False, mime
+
+    # 6. Check generic document extensions / MIME
+    if suffix in DOCUMENT_EXTENSIONS or clean_mime in {
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain",
+        "text/csv",
+    }:
+        return MediaType.document, False, clean_mime or "application/octet-stream"
+
+    # 7. Fallback based on resource_type if provided
+    if resource_type == "image":
+        return MediaType.image, False, "image/jpeg"
+    elif resource_type == "video":
+        return MediaType.video, False, "video/mp4"
+    elif resource_type == "pdf":
+        return MediaType.pdf, False, "application/pdf"
+    elif resource_type == "presentation":
+        return MediaType.document, True, "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    elif resource_type == "document":
+        return MediaType.document, False, clean_mime or "application/octet-stream"
+
+    # 8. If clean_mime is a generic stream or empty, default safely to document instead of hard-failing
+    if clean_mime in {"application/octet-stream", "binary/octet-stream", "application/download", ""}:
+        return MediaType.document, False, "application/octet-stream"
+
+    # 9. Unsupported file type
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"Unsupported file type: '{content_type or filename}'. Please upload an image, presentation (PPT/PPTX), PDF, document, or video.",
+    )
 
 CORE_CATEGORIES = [
     {"category": "learn", "label": "Learn & Concept Explanations"},
@@ -373,7 +464,7 @@ def delete_part(
 # --- Materials Helper ---
 
 
-def _material_to_out(db: Session, material: LearningMaterial) -> MaterialOut:
+def _material_to_out(db: Session, material: LearningMaterial, include_slides: bool = False) -> MaterialOut:
     asset: MediaAsset = material.media_asset
     thumbnail_url = (
         storage_service.presigned_url(asset.thumbnail_object_key, audience="browser") if asset and asset.thumbnail_object_key else None
@@ -385,7 +476,7 @@ def _material_to_out(db: Session, material: LearningMaterial) -> MaterialOut:
         if asset and asset.status == MediaAssetStatus.ready and asset.object_key
         else (asset.source_url if asset and asset.source_type == "link" else None)
     )
-    
+
     category = getattr(material, "category", None) or "learn"
     resource_type = getattr(material, "resource_type", None) or (asset.media_type.value if asset else "video")
     description = getattr(material, "description", None)
@@ -393,6 +484,55 @@ def _material_to_out(db: Session, material: LearningMaterial) -> MaterialOut:
     tags = getattr(material, "tags", None)
     created_by_id = material.created_by_id
     created_by_name = material.created_by.full_name if material.created_by else None
+
+    # Determine if resource is a presentation
+    is_presentation = (
+        resource_type == "presentation"
+        or (asset and asset.source_type == "presentation")
+        or (asset and asset.media_type == MediaType.document and (material.title or "").lower().endswith((".ppt", ".pptx", ".pps", ".ppsx", ".odp")))
+        or (material.title or "").lower().endswith((".ppt", ".pptx"))
+    )
+
+    slide_count = asset.duration_seconds if (is_presentation and asset and asset.duration_seconds) else None
+    slide_urls: list[str] = []
+    slide_thumbnail_urls: list[str] = []
+    preview_pdf_url: str | None = None
+    # Original file URL is available for download whenever asset has an object_key
+    original_file_url: str | None = None
+    if asset and asset.object_key:
+        original_file_url = storage_service.presigned_url(
+            asset.object_key, audience="browser", expires_minutes=library_service.LIBRARY_VIDEO_URL_EXPIRES_MINUTES
+        )
+    else:
+        original_file_url = file_url
+
+    # Slide manifests are ONLY presigned when viewing the specific presentation deck (never in list endpoints)
+    if include_slides and is_presentation and asset and asset.source_url:
+        try:
+            manifest_items = json.loads(asset.source_url)
+            if isinstance(manifest_items, list):
+                for item in manifest_items:
+                    s_key = item.get("slide_key")
+                    t_key = item.get("thumbnail_key")
+                    if s_key:
+                        slide_urls.append(
+                            storage_service.presigned_url(
+                                s_key, audience="browser", expires_minutes=library_service.LIBRARY_VIDEO_URL_EXPIRES_MINUTES
+                            )
+                        )
+                    if t_key:
+                        slide_thumbnail_urls.append(
+                            storage_service.presigned_url(
+                                t_key, audience="browser", expires_minutes=library_service.LIBRARY_VIDEO_URL_EXPIRES_MINUTES
+                            )
+                        )
+        except Exception:
+            pass
+
+        if asset.source_video_id:
+            preview_pdf_url = storage_service.presigned_url(
+                asset.source_video_id, audience="browser", expires_minutes=library_service.LIBRARY_VIDEO_URL_EXPIRES_MINUTES
+            )
 
     return MaterialOut(
         id=material.id,
@@ -418,9 +558,15 @@ def _material_to_out(db: Session, material: LearningMaterial) -> MaterialOut:
         tags=tags,
         created_by_id=created_by_id,
         created_by_name=created_by_name,
-        duration_seconds=asset.duration_seconds if asset else None,
+        duration_seconds=asset.duration_seconds if (asset and not is_presentation) else None,
         thumbnail_url=thumbnail_url,
         file_url=file_url,
+        slide_count=slide_count,
+        slide_urls=slide_urls,
+        slide_thumbnail_urls=slide_thumbnail_urls,
+        preview_pdf_url=preview_pdf_url,
+        original_file_url=original_file_url,
+        preview_type="slides" if is_presentation else None,
         created_at=material.created_at,
     )
 
@@ -576,11 +722,17 @@ async def upload_material(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_smart_class_user),
 ) -> SaveVideoResponse:
-    media_type = UPLOAD_MEDIA_TYPES.get(file.content_type)
-    if media_type is None:
+    try:
+        media_type, is_presentation, resolved_mime = resolve_upload_media_type(
+            file.filename, file.content_type, resource_type
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Failed to resolve media type for file: %s (type: %s)", file.filename, file.content_type)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported file type: {file.content_type}. Supported: images, PDF, documents, and videos.",
+            detail=f"Could not process file format: {str(exc)}",
         )
 
     if db.get(SchoolClass, class_id) is None:
@@ -588,7 +740,15 @@ async def upload_material(
     if db.get(Subject, subject_id) is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Subject not found")
 
-    data = await file.read()
+    try:
+        data = await file.read()
+    except Exception as exc:
+        logger.exception("Failed to read uploaded file payload")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to read uploaded file data: {str(exc)}",
+        )
+
     max_bytes = settings.youtube_download_max_file_mb * 1024 * 1024
     if len(data) > max_bytes:
         raise HTTPException(
@@ -596,60 +756,116 @@ async def upload_material(
             detail=f"File exceeds the {settings.youtube_download_max_file_mb}MB limit",
         )
 
-    chapter = curriculum_service.get_or_create_chapter(db, class_id, subject_id, chapter_name)
-    part = curriculum_service.get_or_create_part(db, chapter.id, part_title)
+    try:
+        chapter = curriculum_service.get_or_create_chapter(db, class_id, subject_id, chapter_name)
+        part = curriculum_service.get_or_create_part(db, chapter.id, part_title)
+    except Exception as exc:
+        logger.exception("Failed to get or create chapter/part for class %s, subject %s", class_id, subject_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to organize curriculum structure: {str(exc)}",
+        )
 
     is_video = media_type == MediaType.video
-    asset = MediaAsset(
-        filename=file.filename or title,
-        media_type=media_type,
-        mime_type=file.content_type,
-        size_bytes=len(data),
-        source_type="upload",
-        uploaded_by_id=current_user.id,
-        status=MediaAssetStatus.pending if is_video else MediaAssetStatus.ready,
-    )
-    db.add(asset)
-    db.flush()
+    initial_status = MediaAssetStatus.pending if (is_video or is_presentation) else MediaAssetStatus.ready
 
-    res_type = resource_type or media_type.value
-    next_order = db.query(func.max(LearningMaterial.order_in_part)).filter(LearningMaterial.part_id == part.id).scalar() or 0
-    material = LearningMaterial(
-        media_asset_id=asset.id,
-        class_id=class_id,
-        subject_id=subject_id,
-        chapter_id=chapter.id,
-        part_id=part.id,
-        title=title,
-        order_in_part=next_order + 1,
-        category=category,
-        resource_type=res_type,
-        description=description,
-        source=source or "Teacher Upload",
-        tags=tags,
-        created_by_id=current_user.id,
-    )
-    db.add(material)
+    try:
+        storage_service.ensure_bucket()
+    except Exception as exc:
+        logger.exception("Failed to connect or verify storage bucket")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Storage service unavailable. Please try again later.",
+        )
 
-    if is_video:
-        db.commit()
-        scratch_dir = library_service.create_scratch_dir()
-        temp_path = scratch_dir / (file.filename or "upload.mp4")
-        temp_path.write_bytes(data)
-        background_tasks.add_task(library_service.process_uploaded_video, asset.id, str(temp_path), str(scratch_dir))
-    else:
-        object_key = f"materials/{asset.id}/{uuid.uuid4().hex}_{file.filename or 'file'}"
-        storage_service.upload_bytes(object_key, data, file.content_type)
-        asset.object_key = object_key
-        asset.bucket = settings.minio_bucket
-        db.commit()
+    try:
+        asset = MediaAsset(
+            filename=file.filename or title,
+            media_type=media_type,
+            mime_type=resolved_mime,
+            size_bytes=len(data),
+            source_type="presentation" if is_presentation else "upload",
+            uploaded_by_id=current_user.id,
+            status=initial_status,
+        )
+        db.add(asset)
+        db.flush()
+
+        res_type = resource_type or ("presentation" if is_presentation else media_type.value)
+        next_order = db.query(func.max(LearningMaterial.order_in_part)).filter(LearningMaterial.part_id == part.id).scalar() or 0
+        material = LearningMaterial(
+            media_asset_id=asset.id,
+            class_id=class_id,
+            subject_id=subject_id,
+            chapter_id=chapter.id,
+            part_id=part.id,
+            title=title,
+            order_in_part=next_order + 1,
+            category=category,
+            resource_type=res_type,
+            description=description,
+            source=source or "Teacher Upload",
+            tags=tags,
+            created_by_id=current_user.id,
+        )
+        db.add(material)
+
+        if is_video:
+            db.commit()
+            scratch_dir = library_service.create_scratch_dir()
+            temp_path = scratch_dir / (file.filename or "upload.mp4")
+            temp_path.write_bytes(data)
+            background_tasks.add_task(library_service.process_uploaded_video, asset.id, str(temp_path), str(scratch_dir))
+        elif is_presentation:
+            orig_key = f"materials/{asset.id}/original_{uuid.uuid4().hex}_{file.filename or 'presentation.pptx'}"
+            storage_service.upload_bytes(orig_key, data, resolved_mime)
+            asset.object_key = orig_key
+            asset.source_type = "presentation"
+            asset.bucket = settings.minio_bucket
+            db.commit()
+
+            from app.services import presentation_service
+            scratch_dir = presentation_service.create_presentation_scratch_dir()
+            temp_path = scratch_dir / (file.filename or "presentation.pptx")
+            temp_path.write_bytes(data)
+            background_tasks.add_task(
+                presentation_service.process_uploaded_presentation, asset.id, str(temp_path), str(scratch_dir)
+            )
+        elif media_type == MediaType.image:
+            object_key = f"materials/{asset.id}/{uuid.uuid4().hex}_{file.filename or 'image.png'}"
+            storage_service.upload_bytes(object_key, data, resolved_mime)
+            asset.object_key = object_key
+            asset.thumbnail_object_key = object_key
+            asset.bucket = settings.minio_bucket
+            asset.status = MediaAssetStatus.ready
+            db.commit()
+        else:
+            object_key = f"materials/{asset.id}/{uuid.uuid4().hex}_{file.filename or 'file'}"
+            storage_service.upload_bytes(object_key, data, resolved_mime)
+            asset.object_key = object_key
+            asset.bucket = settings.minio_bucket
+            asset.status = MediaAssetStatus.ready
+            db.commit()
+
+    except Exception as exc:
+        db.rollback()
+        logger.exception("Failed to save uploaded material '%s'", title)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save material: {str(exc)}",
+        )
 
     return SaveVideoResponse(material=_material_to_out(db, _load_material(db, material.id)), reused_existing_asset=False)
 
 
 @router.get("/materials/{material_id}", response_model=MaterialOut)
 def get_material(material_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_smart_class_user)) -> MaterialOut:
-    return _material_to_out(db, _load_material(db, material_id))
+    return _material_to_out(db, _load_material(db, material_id), include_slides=True)
+
+
+@router.get("/materials/{material_id}/presentation", response_model=MaterialOut)
+def get_material_presentation(material_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_smart_class_user)) -> MaterialOut:
+    return _material_to_out(db, _load_material(db, material_id), include_slides=True)
 
 
 @router.get("/materials", response_model=list[MaterialOut])
@@ -760,8 +976,61 @@ def delete_material(material_id: int, db: Session = Depends(get_db), _: User = D
                 storage_service.delete_object(asset.object_key)
             if asset.thumbnail_object_key:
                 storage_service.delete_object(asset.thumbnail_object_key)
+            if asset.source_video_id and asset.source_type == "presentation":
+                storage_service.delete_object(asset.source_video_id)
             db.delete(asset)
             db.commit()
+
+
+@router.post("/materials/{material_id}/retry-processing", response_model=MaterialOut)
+def retry_material_processing(
+    material_id: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_smart_class_user),
+) -> MaterialOut:
+    material = _load_material(db, material_id)
+    asset: MediaAsset = material.media_asset
+    if not asset:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media asset not found")
+
+    if asset.status not in (MediaAssetStatus.failed, MediaAssetStatus.pending):
+        return _material_to_out(db, material, include_slides=True)
+
+    filename_lower = (asset.filename or "").lower()
+    is_presentation = (
+        (asset.media_type == MediaType.document and filename_lower.endswith((".ppt", ".pptx", ".pps", ".ppsx", ".odp")))
+        or filename_lower.endswith((".ppt", ".pptx"))
+        or (material.resource_type == "presentation")
+        or asset.source_type == "presentation"
+    )
+
+    if is_presentation and asset.object_key:
+        try:
+            raw_bytes = storage_service.get_bytes(asset.object_key)
+            from app.services import presentation_service
+            scratch_dir = presentation_service.create_presentation_scratch_dir()
+            temp_path = scratch_dir / (asset.filename or "presentation.pptx")
+            temp_path.write_bytes(raw_bytes)
+
+            asset.status = MediaAssetStatus.pending
+            asset.error_message = None
+            asset.processing_stage = None
+            db.commit()
+
+            background_tasks.add_task(
+                presentation_service.process_uploaded_presentation, asset.id, str(temp_path), str(scratch_dir)
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to retry: {str(exc)}")
+    elif asset.source_type == "youtube" and asset.source_url:
+        asset.status = MediaAssetStatus.pending
+        asset.error_message = None
+        asset.processing_stage = None
+        db.commit()
+        background_tasks.add_task(library_service.process_library_video, asset.id)
+
+    return _material_to_out(db, _load_material(db, material_id), include_slides=True)
 
 
 # --- Content Coverage & Overview ---
