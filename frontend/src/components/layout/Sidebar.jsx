@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../lib/auth.jsx';
+import WorkspaceSwitcher from './WorkspaceSwitcher';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
@@ -29,14 +30,19 @@ export default function Sidebar() {
   return (
     <aside className="bg-surface-container-low border-r border-outline-variant/10 h-screen w-64 fixed left-0 top-0 hidden md:flex flex-col py-md px-sm z-50">
       {/* Brand Header */}
-      <div className="flex items-center gap-3 mb-8 px-2">
+      <div className="flex items-center gap-3 mb-4 px-2">
         <div className="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center shrink-0">
-          <span className="material-symbols-outlined text-on-primary-container">school</span>
+          <span className="material-symbols-outlined text-on-primary-container">campaign</span>
         </div>
         <div>
           <h1 className="font-headline-sm text-headline-sm font-bold text-primary truncate leading-tight">SchoolSocials</h1>
-          <p className="font-label-md text-label-md text-on-surface-variant truncate">Institutional Innovation</p>
+          <p className="font-label-md text-label-md text-on-surface-variant truncate">Social Hub</p>
         </div>
+      </div>
+
+      {/* Top-Level Workspace Switcher */}
+      <div className="mb-6 px-1">
+        <WorkspaceSwitcher size="compact" className="w-full justify-center" />
       </div>
 
       {/* Navigation Links */}

@@ -14,10 +14,23 @@ import AdminUsersPage from './pages/AdminUsersPage';
 import LoginPage from './pages/LoginPage';
 import { AuthProvider as SocialAuthProvider, ProtectedRoute as SocialProtectedRoute } from './lib/auth.jsx';
 
-// --- Smart Class Library section (fully isolated: own login, own auth, own layout) ---
+// --- Smart Class Library section (digital teaching & learning library) ---
 import SmartClassLayout from './components/layout/SmartClassLayout';
-import AddVideoPage from './pages/AddVideoPage';
-import SmartClassLibraryPage from './pages/SmartClassLibraryPage';
+import SmartClassHomePage from './pages/smartclass/SmartClassHomePage';
+import MyClassesPage from './pages/smartclass/MyClassesPage';
+import SubjectCurriculumPage from './pages/smartclass/SubjectCurriculumPage';
+import ChapterWorkspacePage from './pages/smartclass/ChapterWorkspacePage';
+import AddMaterialPage from './pages/smartclass/AddMaterialPage';
+import LibrarySearchPage from './pages/smartclass/LibrarySearchPage';
+import ContentCoveragePage from './pages/smartclass/ContentCoveragePage';
+import ManageMaterialPage from './pages/smartclass/ManageMaterialPage';
+import RecentLessonsPage from './pages/smartclass/RecentLessonsPage';
+import FavoritesPage from './pages/smartclass/FavoritesPage';
+import OfflinePage from './pages/smartclass/OfflinePage';
+import MyUploadsPage from './pages/smartclass/MyUploadsPage';
+import AdminCurriculumPage from './pages/smartclass/admin/AdminCurriculumPage';
+import AdminTeachersPage from './pages/smartclass/admin/AdminTeachersPage';
+import AdminLibraryManagementPage from './pages/smartclass/admin/AdminLibraryManagementPage';
 import SmartClassLoginPage from './pages/SmartClassLoginPage';
 import SmartClassAdminUsersPage from './pages/SmartClassAdminUsersPage';
 import { AuthProvider as SmartClassAuthProvider, ProtectedRoute as SmartClassProtectedRoute } from './lib/smartClassAuth.jsx';
@@ -31,7 +44,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<PortalChooserPage />} />
 
-          {/* Social Media Manager -- own login, own token, own protected routes */}
+          {/* WORKSPACE 1: Social Media Manager */}
           <Route path="/login" element={<LoginPage />} />
           <Route
             element={
@@ -50,9 +63,7 @@ export default function App() {
             <Route path="/admin/users" element={<AdminUsersPage />} />
           </Route>
 
-          {/* Smart Class Library -- completely separate login/session; a social session cannot
-              reach these routes (SmartClassProtectedRoute checks the smart-class auth state only,
-              and the backend independently rejects a social token on any /library/* call). */}
+          {/* WORKSPACE 2: Smart Class Teaching Library */}
           <Route path="/smart-class/login" element={<SmartClassLoginPage />} />
           <Route
             element={
@@ -61,8 +72,30 @@ export default function App() {
               </SmartClassProtectedRoute>
             }
           >
-            <Route path="/smart-class/library" element={<SmartClassLibraryPage />} />
-            <Route path="/smart-class/add-video" element={<AddVideoPage />} />
+            {/* Smart Class Home & Core Experience */}
+            <Route path="/smart-class" element={<SmartClassHomePage />} />
+            <Route path="/smart-class/classes" element={<MyClassesPage />} />
+            <Route path="/smart-class/curriculum" element={<SubjectCurriculumPage />} />
+            <Route path="/smart-class/curriculum/:classId/:subjectId" element={<SubjectCurriculumPage />} />
+            <Route path="/smart-class/curriculum/:classId/:subjectId/:chapterId" element={<ChapterWorkspacePage />} />
+            <Route path="/smart-class/library" element={<LibrarySearchPage />} />
+
+            {/* Teacher Tools */}
+            <Route path="/smart-class/add-material" element={<AddMaterialPage />} />
+            <Route path="/smart-class/add-video" element={<AddMaterialPage />} />
+            <Route path="/smart-class/manage-material" element={<ManageMaterialPage />} />
+            <Route path="/smart-class/coverage" element={<ContentCoveragePage />} />
+
+            {/* Quick Access / Productivity */}
+            <Route path="/smart-class/recent" element={<RecentLessonsPage />} />
+            <Route path="/smart-class/favorites" element={<FavoritesPage />} />
+            <Route path="/smart-class/offline" element={<OfflinePage />} />
+            <Route path="/smart-class/my-uploads" element={<MyUploadsPage />} />
+
+            {/* Administration */}
+            <Route path="/smart-class/admin/curriculum" element={<AdminCurriculumPage />} />
+            <Route path="/smart-class/admin/teachers" element={<AdminTeachersPage />} />
+            <Route path="/smart-class/admin/library-management" element={<AdminLibraryManagementPage />} />
             <Route path="/smart-class/admin/users" element={<SmartClassAdminUsersPage />} />
           </Route>
 
@@ -72,3 +105,4 @@ export default function App() {
     </SocialAuthProvider>
   );
 }
+

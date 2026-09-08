@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../lib/auth.jsx';
+import WorkspaceSwitcher from './WorkspaceSwitcher';
 
 export default function TopAppBar({ title, showSearch = false, searchPlaceholder = "Search...", onSearch, onToggleMobileMenu }) {
   const [searchValue, setSearchValue] = useState("");
@@ -33,7 +34,7 @@ export default function TopAppBar({ title, showSearch = false, searchPlaceholder
           </button>
         )}
         <Link to="/dashboard" className="font-headline-sm text-headline-sm font-bold text-primary truncate">
-          SchoolSocialsConnect
+          SchoolSocials
         </Link>
       </div>
 
@@ -54,6 +55,11 @@ export default function TopAppBar({ title, showSearch = false, searchPlaceholder
             />
           </div>
         )}
+      </div>
+
+      {/* Workspace Switcher in center on desktop */}
+      <div className="hidden lg:flex items-center mx-auto">
+        <WorkspaceSwitcher size="default" />
       </div>
 
       {/* Right Actions */}

@@ -11,6 +11,11 @@ class SaveVideoRequest(BaseModel):
     # Free text; get-or-create (case-insensitive) on the backend -- see curriculum_service.py.
     chapter_name: str = Field(min_length=1, max_length=255)
     part_title: str = Field(min_length=1, max_length=255)
+    category: str | None = Field(default="learn", max_length=64)
+    resource_type: str | None = Field(default="video", max_length=64)
+    description: str | None = Field(default=None, max_length=1024)
+    source: str | None = Field(default=None, max_length=255)
+    tags: str | None = Field(default=None, max_length=512)
 
 
 class MaterialUpdateRequest(BaseModel):
@@ -20,6 +25,11 @@ class MaterialUpdateRequest(BaseModel):
     chapter_name: str | None = None
     part_title: str | None = None
     order_in_part: int | None = None
+    category: str | None = None
+    resource_type: str | None = None
+    description: str | None = None
+    source: str | None = None
+    tags: str | None = None
 
 
 class MaterialOut(BaseModel):
@@ -39,6 +49,13 @@ class MaterialOut(BaseModel):
     part_id: int
     part_title: str
     order_in_part: int
+    category: str | None = "learn"
+    resource_type: str | None = None
+    description: str | None = None
+    source: str | None = None
+    tags: str | None = None
+    created_by_id: int | None = None
+    created_by_name: str | None = None
     duration_seconds: int | None
     thumbnail_url: str | None
     # The material's own content -- a streamable video URL, a viewable image URL, or a
@@ -51,3 +68,36 @@ class SaveVideoResponse(BaseModel):
     material: MaterialOut
     reused_existing_asset: bool
     other_locations: list[str] = []
+
+
+class ChapterCreateRequest(BaseModel):
+    class_id: int
+    subject_id: int
+    name: str = Field(min_length=1, max_length=255)
+    order: int = 0
+
+
+class ChapterUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    order: int | None = None
+
+
+class PartCreateRequest(BaseModel):
+    chapter_id: int
+    title: str = Field(min_length=1, max_length=255)
+    part_number: int | None = None
+
+
+class PartUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    part_number: int | None = None
+
+
+class ClassUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=64)
+    order: int | None = None
+
+
+class SubjectUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=128)
+

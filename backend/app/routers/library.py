@@ -9,22 +9,41 @@ from app.deps import get_current_smart_class_user, get_db
 from app.models.curriculum import Chapter, ChapterPart, LearningMaterial, SchoolClass, Subject
 from app.models.media_asset import MediaAsset, MediaAssetStatus, MediaType
 from app.models.user import User, UserRole
-from app.schemas.curriculum import ChapterOut, SchoolClassOut, SubjectOut
-from app.schemas.library import MaterialOut, MaterialUpdateRequest, SaveVideoRequest, SaveVideoResponse
+from app.schemas.curriculum import (
+    CategoryCoverageDetail,
+    ChapterCoverageOut,
+    ChapterOut,
+    ChapterPartOut,
+    ClassSubjectOverviewOut,
+    CurriculumCoverageOut,
+    SchoolClassOut,
+    SubjectOut,
+)
+from app.schemas.library import (
+    ChapterCreateRequest,
+    ChapterUpdateRequest,
+    ClassUpdateRequest,
+    MaterialOut,
+    MaterialUpdateRequest,
+    PartCreateRequest,
+    PartUpdateRequest,
+    SaveVideoRequest,
+    SaveVideoResponse,
+    SubjectUpdateRequest,
+)
 from app.schemas.youtube import YouTubeInfoRequest, YouTubeInfoResponse
 from app.services import curriculum_service, library_service, storage_service, youtube_service
 from app.services.youtube_service import YouTubeError
 
 router = APIRouter(prefix="/library", tags=["library"])
 
-# Direct-upload counterpart to the paste-a-link flow (see save_video/upload_material below).
-# Keyed by exact content-type so we reject anything unexpected with a clear error rather than
-# guessing from the filename.
+# Direct-upload counterpart to the paste-a-link flow.
 UPLOAD_MEDIA_TYPES: dict[str, MediaType] = {
     "image/jpeg": MediaType.image,
     "image/png": MediaType.image,
     "image/webp": MediaType.image,
     "image/gif": MediaType.image,
+    "image/svg+xml": MediaType.image,
     "video/mp4": MediaType.video,
     "video/quicktime": MediaType.video,
     "video/webm": MediaType.video,
@@ -32,7 +51,16 @@ UPLOAD_MEDIA_TYPES: dict[str, MediaType] = {
     "application/pdf": MediaType.pdf,
     "application/vnd.ms-powerpoint": MediaType.document,
     "application/vnd.openxmlformats-officedocument.presentationml.presentation": MediaType.document,
+    "application/msword": MediaType.document,
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": MediaType.document,
 }
+
+CORE_CATEGORIES = [
+    {"category": "learn", "label": "Learn & Concept Explanations"},
+    {"category": "understand", "label": "Understand & Worked Examples"},
+    {"category": "practice", "label": "Practice, NCERT & Worksheets"},
+    {"category": "reference", "label": "Reference Notes & Diagrams"},
+]
 
 
 def _require_admin(user: User) -> None:
@@ -40,9 +68,6 @@ def _require_admin(user: User) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
 
-# Smart Class's own metadata-fetch endpoint -- deliberately NOT reusing /youtube/info (that one is
-# social-scoped, see routers/youtube_downloader.py). Reuses the underlying youtube_service function
-# directly instead, so a smart-class token never needs to touch a social-scoped endpoint at all.
 @router.post("/video-info", response_model=YouTubeInfoResponse)
 def get_video_info(payload: YouTubeInfoRequest, _: User = Depends(get_current_smart_class_user)) -> YouTubeInfoResponse:
     try:
@@ -51,53 +76,138 @@ def get_video_info(payload: YouTubeInfoRequest, _: User = Depends(get_current_sm
         raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
 
 
-# --- Classes & Subjects (structural setup -- admin only to create; anyone authenticated to read) ---
+# --- Classes & Subjects ---
 
 
 @router.get("/classes", response_model=list[SchoolClassOut])
-def list_classes(db: Session = Depends(get_db), _: User = Depends(get_current_smart_class_user)) -> list[SchoolClass]:
-    return db.query(SchoolClass).order_by(SchoolClass.order, SchoolClass.name).all()
+def list_classes(db: Session = Depends(get_db), _: User = Depends(get_current_smart_class_user)) -> list[SchoolClassOut]:
+    classes = db.query(SchoolClass).order_by(SchoolClass.order, SchoolClass.name).all()
+    results = []
+    for c in classes:
+        chap_count = db.query(func.count(Chapter.id)).filter(Chapter.class_id == c.id).scalar() or 0
+        mat_count = db.query(func.count(LearningMaterial.id)).filter(LearningMaterial.class_id == c.id).scalar() or 0
+        results.append(
+            SchoolClassOut(
+                id=c.id,
+                name=c.name,
+                order=c.order,
+                chapters_count=chap_count,
+                resources_count=mat_count,
+            )
+        )
+    return results
 
 
 @router.post("/classes", response_model=SchoolClassOut, status_code=status.HTTP_201_CREATED)
-def create_class(name: str, order: int = 0, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)) -> SchoolClass:
+def create_class(
+    name: str, order: int = 0, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)
+) -> SchoolClassOut:
     _require_admin(current_user)
     existing = db.query(SchoolClass).filter(func.lower(SchoolClass.name) == name.strip().lower()).first()
     if existing:
-        return existing
+        return SchoolClassOut(id=existing.id, name=existing.name, order=existing.order)
     school_class = SchoolClass(name=name.strip(), order=order)
     db.add(school_class)
     db.commit()
     db.refresh(school_class)
-    return school_class
+    return SchoolClassOut(id=school_class.id, name=school_class.name, order=school_class.order)
+
+
+@router.patch("/classes/{class_id}", response_model=SchoolClassOut)
+def update_class(
+    class_id: int, payload: ClassUpdateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)
+) -> SchoolClassOut:
+    _require_admin(current_user)
+    school_class = db.get(SchoolClass, class_id)
+    if not school_class:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found")
+    if payload.name is not None:
+        school_class.name = payload.name.strip()
+    if payload.order is not None:
+        school_class.order = payload.order
+    db.commit()
+    return SchoolClassOut(id=school_class.id, name=school_class.name, order=school_class.order)
+
+
+@router.delete("/classes/{class_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_class(
+    class_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)
+) -> None:
+    _require_admin(current_user)
+    school_class = db.get(SchoolClass, class_id)
+    if not school_class:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found")
+    db.delete(school_class)
+    db.commit()
 
 
 @router.get("/subjects", response_model=list[SubjectOut])
-def list_subjects(db: Session = Depends(get_db), _: User = Depends(get_current_smart_class_user)) -> list[Subject]:
-    return db.query(Subject).order_by(Subject.name).all()
+def list_subjects(db: Session = Depends(get_db), _: User = Depends(get_current_smart_class_user)) -> list[SubjectOut]:
+    subjects = db.query(Subject).order_by(Subject.name).all()
+    results = []
+    for s in subjects:
+        chap_count = db.query(func.count(Chapter.id)).filter(Chapter.subject_id == s.id).scalar() or 0
+        mat_count = db.query(func.count(LearningMaterial.id)).filter(LearningMaterial.subject_id == s.id).scalar() or 0
+        results.append(
+            SubjectOut(
+                id=s.id,
+                name=s.name,
+                chapters_count=chap_count,
+                resources_count=mat_count,
+            )
+        )
+    return results
 
 
 @router.post("/subjects", response_model=SubjectOut, status_code=status.HTTP_201_CREATED)
-def create_subject(name: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)) -> Subject:
+def create_subject(
+    name: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)
+) -> SubjectOut:
     _require_admin(current_user)
     existing = db.query(Subject).filter(func.lower(Subject.name) == name.strip().lower()).first()
     if existing:
-        return existing
+        return SubjectOut(id=existing.id, name=existing.name)
     subject = Subject(name=name.strip())
     db.add(subject)
     db.commit()
     db.refresh(subject)
-    return subject
+    return SubjectOut(id=subject.id, name=subject.name)
 
 
-# --- Chapters (read, for the wizard's autocomplete + the library browser's drill-down) ---
+@router.patch("/subjects/{subject_id}", response_model=SubjectOut)
+def update_subject(
+    subject_id: int, payload: SubjectUpdateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)
+) -> SubjectOut:
+    _require_admin(current_user)
+    subject = db.get(Subject, subject_id)
+    if not subject:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
+    if payload.name is not None:
+        subject.name = payload.name.strip()
+    db.commit()
+    return SubjectOut(id=subject.id, name=subject.name)
+
+
+@router.delete("/subjects/{subject_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_subject(
+    subject_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)
+) -> None:
+    _require_admin(current_user)
+    subject = db.get(Subject, subject_id)
+    if not subject:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
+    db.delete(subject)
+    db.commit()
+
+
+# --- Chapters & Topics ---
 
 
 @router.get("/classes/{class_id}/subjects/{subject_id}/chapters", response_model=list[ChapterOut])
 def list_chapters(
     class_id: int, subject_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_smart_class_user)
-) -> list[Chapter]:
-    return (
+) -> list[ChapterOut]:
+    chapters = (
         db.query(Chapter)
         .options(joinedload(Chapter.parts))
         .filter(Chapter.class_id == class_id, Chapter.subject_id == subject_id)
@@ -105,30 +215,193 @@ def list_chapters(
         .all()
     )
 
+    out = []
+    for chap in chapters:
+        # Count materials in this chapter
+        chap_mat_count = (
+            db.query(func.count(LearningMaterial.id)).filter(LearningMaterial.chapter_id == chap.id).scalar() or 0
+        )
+        parts_out = []
+        categories_in_chap = set()
+        for p in sorted(chap.parts, key=lambda x: x.part_number):
+            p_mat_count = (
+                db.query(func.count(LearningMaterial.id)).filter(LearningMaterial.part_id == p.id).scalar() or 0
+            )
+            # Find distinct categories in this part
+            cats = (
+                db.query(LearningMaterial.category)
+                .filter(LearningMaterial.part_id == p.id)
+                .distinct()
+                .all()
+            )
+            p_cats = [c[0] for c in cats if c[0]]
+            for c in p_cats:
+                categories_in_chap.add(c.lower())
+            parts_out.append(
+                ChapterPartOut(
+                    id=p.id,
+                    part_number=p.part_number,
+                    title=p.title,
+                    resources_count=p_mat_count,
+                    categories_present=p_cats,
+                )
+            )
 
-# --- Materials ---
+        # Compute coverage score
+        cat_count = len(categories_in_chap)
+        score = min(100, int((cat_count / max(1, 4)) * 100)) if chap_mat_count > 0 else 0
+        if score >= 75:
+            label = "Excellent"
+        elif score >= 50:
+            label = "Good"
+        elif chap_mat_count > 0:
+            label = "Needs Material"
+        else:
+            label = "Limited"
+
+        out.append(
+            ChapterOut(
+                id=chap.id,
+                name=chap.name,
+                order=chap.order,
+                class_id=chap.class_id,
+                subject_id=chap.subject_id,
+                topics_count=len(chap.parts),
+                resources_count=chap_mat_count,
+                coverage_score=score,
+                coverage_label=label,
+                parts=parts_out,
+            )
+        )
+    return out
+
+
+@router.post("/chapters", response_model=ChapterOut, status_code=status.HTTP_201_CREATED)
+def create_chapter(
+    payload: ChapterCreateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)
+) -> ChapterOut:
+    chapter = curriculum_service.get_or_create_chapter(db, payload.class_id, payload.subject_id, payload.name)
+    if payload.order:
+        chapter.order = payload.order
+        db.commit()
+    return ChapterOut(
+        id=chapter.id,
+        name=chapter.name,
+        order=chapter.order,
+        class_id=chapter.class_id,
+        subject_id=chapter.subject_id,
+        topics_count=0,
+        resources_count=0,
+        parts=[],
+    )
+
+
+@router.patch("/chapters/{chapter_id}", response_model=ChapterOut)
+def update_chapter(
+    chapter_id: int, payload: ChapterUpdateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)
+) -> ChapterOut:
+    chapter = db.query(Chapter).options(joinedload(Chapter.parts)).filter(Chapter.id == chapter_id).first()
+    if not chapter:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chapter not found")
+    if payload.name is not None:
+        chapter.name = payload.name.strip()
+    if payload.order is not None:
+        chapter.order = payload.order
+    db.commit()
+    return ChapterOut(
+        id=chapter.id,
+        name=chapter.name,
+        order=chapter.order,
+        class_id=chapter.class_id,
+        subject_id=chapter.subject_id,
+        topics_count=len(chapter.parts),
+        resources_count=0,
+        parts=[ChapterPartOut(id=p.id, part_number=p.part_number, title=p.title) for p in chapter.parts],
+    )
+
+
+@router.delete("/chapters/{chapter_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_chapter(
+    chapter_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)
+) -> None:
+    _require_admin(current_user)
+    chapter = db.get(Chapter, chapter_id)
+    if not chapter:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chapter not found")
+    db.delete(chapter)
+    db.commit()
+
+
+@router.post("/parts", response_model=ChapterPartOut, status_code=status.HTTP_201_CREATED)
+def create_part(
+    payload: PartCreateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)
+) -> ChapterPartOut:
+    part = curriculum_service.get_or_create_part(db, payload.chapter_id, payload.title)
+    if payload.part_number is not None:
+        part.part_number = payload.part_number
+        db.commit()
+    return ChapterPartOut(id=part.id, part_number=part.part_number, title=part.title, resources_count=0)
+
+
+@router.patch("/parts/{part_id}", response_model=ChapterPartOut)
+def update_part(
+    part_id: int, payload: PartUpdateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)
+) -> ChapterPartOut:
+    part = db.get(ChapterPart, part_id)
+    if not part:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Topic / part not found")
+    if payload.title is not None:
+        part.title = payload.title.strip()
+    if payload.part_number is not None:
+        part.part_number = payload.part_number
+    db.commit()
+    return ChapterPartOut(id=part.id, part_number=part.part_number, title=part.title, resources_count=0)
+
+
+@router.delete("/parts/{part_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_part(
+    part_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_smart_class_user)
+) -> None:
+    _require_admin(current_user)
+    part = db.get(ChapterPart, part_id)
+    if not part:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Topic / part not found")
+    db.delete(part)
+    db.commit()
+
+
+# --- Materials Helper ---
 
 
 def _material_to_out(db: Session, material: LearningMaterial) -> MaterialOut:
     asset: MediaAsset = material.media_asset
     thumbnail_url = (
-        storage_service.presigned_url(asset.thumbnail_object_key, audience="browser") if asset.thumbnail_object_key else None
+        storage_service.presigned_url(asset.thumbnail_object_key, audience="browser") if asset and asset.thumbnail_object_key else None
     )
     file_url = (
         storage_service.presigned_url(
             asset.object_key, audience="browser", expires_minutes=library_service.LIBRARY_VIDEO_URL_EXPIRES_MINUTES
         )
-        if asset.status == MediaAssetStatus.ready and asset.object_key
-        else None
+        if asset and asset.status == MediaAssetStatus.ready and asset.object_key
+        else (asset.source_url if asset and asset.source_type == "link" else None)
     )
+    
+    category = getattr(material, "category", None) or "learn"
+    resource_type = getattr(material, "resource_type", None) or (asset.media_type.value if asset else "video")
+    description = getattr(material, "description", None)
+    source = getattr(material, "source", None) or (asset.source_type if asset else None)
+    tags = getattr(material, "tags", None)
+    created_by_id = material.created_by_id
+    created_by_name = material.created_by.full_name if material.created_by else None
+
     return MaterialOut(
         id=material.id,
-        media_asset_id=asset.id,
+        media_asset_id=asset.id if asset else 0,
         title=material.title,
-        media_type=asset.media_type.value,
-        status=asset.status.value,
-        processing_stage=asset.processing_stage,
-        error_message=asset.error_message,
+        media_type=asset.media_type.value if asset else "video",
+        status=asset.status.value if asset else "ready",
+        processing_stage=asset.processing_stage if asset else None,
+        error_message=asset.error_message if asset else None,
         class_id=material.class_id,
         class_name=material.school_class.name,
         subject_id=material.subject_id,
@@ -138,7 +411,14 @@ def _material_to_out(db: Session, material: LearningMaterial) -> MaterialOut:
         part_id=material.part_id,
         part_title=material.part.title,
         order_in_part=material.order_in_part,
-        duration_seconds=asset.duration_seconds,
+        category=category,
+        resource_type=resource_type,
+        description=description,
+        source=source,
+        tags=tags,
+        created_by_id=created_by_id,
+        created_by_name=created_by_name,
+        duration_seconds=asset.duration_seconds if asset else None,
         thumbnail_url=thumbnail_url,
         file_url=file_url,
         created_at=material.created_at,
@@ -154,6 +434,7 @@ def _load_material(db: Session, material_id: int) -> LearningMaterial:
             joinedload(LearningMaterial.subject),
             joinedload(LearningMaterial.chapter),
             joinedload(LearningMaterial.part),
+            joinedload(LearningMaterial.created_by),
         )
         .filter(LearningMaterial.id == material_id)
         .first()
@@ -161,6 +442,9 @@ def _load_material(db: Session, material_id: int) -> LearningMaterial:
     if material is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
     return material
+
+
+# --- Save & Ingest Material ---
 
 
 @router.post("/materials", response_model=SaveVideoResponse, status_code=status.HTTP_201_CREATED)
@@ -222,6 +506,11 @@ def save_video(
             part_id=part.id,
             title=payload.title,
             order_in_part=next_order + 1,
+            category=payload.category or "learn",
+            resource_type=payload.resource_type or "video",
+            description=payload.description,
+            source=payload.source or "YouTube",
+            tags=payload.tags,
             created_by_id=current_user.id,
         )
         db.add(material)
@@ -255,6 +544,11 @@ def save_video(
         part_id=part.id,
         title=payload.title,
         order_in_part=next_order + 1,
+        category=payload.category or "learn",
+        resource_type=payload.resource_type or "video",
+        description=payload.description,
+        source=payload.source or "YouTube",
+        tags=payload.tags,
         created_by_id=current_user.id,
     )
     db.add(material)
@@ -274,19 +568,19 @@ async def upload_material(
     subject_id: int = Form(...),
     chapter_name: str = Form(..., min_length=1, max_length=255),
     part_title: str = Form(..., min_length=1, max_length=255),
+    category: str = Form(default="learn"),
+    resource_type: str | None = Form(default=None),
+    description: str | None = Form(default=None),
+    source: str | None = Form(default=None),
+    tags: str | None = Form(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_smart_class_user),
 ) -> SaveVideoResponse:
-    """Direct-file counterpart to save_video (paste-a-link). Images/PDF/PowerPoint are small
-    enough to store synchronously in this request; only video needs the same background
-    normalize-and-upload pipeline as the YouTube path (reused via process_uploaded_video). There's
-    no dedup check here -- that concept (same source_video_id) only applies to link-based ingestion.
-    """
     media_type = UPLOAD_MEDIA_TYPES.get(file.content_type)
     if media_type is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported file type: {file.content_type}. Supported: images, PDF, PowerPoint, video.",
+            detail=f"Unsupported file type: {file.content_type}. Supported: images, PDF, documents, and videos.",
         )
 
     if db.get(SchoolClass, class_id) is None:
@@ -318,6 +612,7 @@ async def upload_material(
     db.add(asset)
     db.flush()
 
+    res_type = resource_type or media_type.value
     next_order = db.query(func.max(LearningMaterial.order_in_part)).filter(LearningMaterial.part_id == part.id).scalar() or 0
     material = LearningMaterial(
         media_asset_id=asset.id,
@@ -327,6 +622,11 @@ async def upload_material(
         part_id=part.id,
         title=title,
         order_in_part=next_order + 1,
+        category=category,
+        resource_type=res_type,
+        description=description,
+        source=source or "Teacher Upload",
+        tags=tags,
         created_by_id=current_user.id,
     )
     db.add(material)
@@ -358,6 +658,9 @@ def list_materials(
     subject_id: int | None = None,
     chapter_id: int | None = None,
     part_id: int | None = None,
+    category: str | None = None,
+    resource_type: str | None = None,
+    teacher_id: int | None = None,
     search: str | None = None,
     db: Session = Depends(get_db),
     _: User = Depends(get_current_smart_class_user),
@@ -368,6 +671,7 @@ def list_materials(
         joinedload(LearningMaterial.subject),
         joinedload(LearningMaterial.chapter),
         joinedload(LearningMaterial.part),
+        joinedload(LearningMaterial.created_by),
     )
     if class_id is not None:
         query = query.filter(LearningMaterial.class_id == class_id)
@@ -377,9 +681,21 @@ def list_materials(
         query = query.filter(LearningMaterial.chapter_id == chapter_id)
     if part_id is not None:
         query = query.filter(LearningMaterial.part_id == part_id)
+    if category is not None and category != "all":
+        query = query.filter(func.lower(LearningMaterial.category) == category.lower())
+    if resource_type is not None and resource_type != "all":
+        query = query.filter(func.lower(LearningMaterial.resource_type) == resource_type.lower())
+    if teacher_id is not None:
+        query = query.filter(LearningMaterial.created_by_id == teacher_id)
     if search:
-        query = query.filter(LearningMaterial.title.ilike(f"%{search}%"))
-    materials = query.order_by(LearningMaterial.part_id, LearningMaterial.order_in_part).all()
+        s = f"%{search.strip()}%"
+        query = query.filter(
+            (LearningMaterial.title.ilike(s))
+            | (LearningMaterial.description.ilike(s))
+            | (LearningMaterial.tags.ilike(s))
+            | (LearningMaterial.source.ilike(s))
+        )
+    materials = query.order_by(LearningMaterial.part_id, LearningMaterial.order_in_part, LearningMaterial.created_at.desc()).all()
     return [_material_to_out(db, m) for m in materials]
 
 
@@ -393,6 +709,16 @@ def update_material(
         material.title = payload.title
     if payload.order_in_part is not None:
         material.order_in_part = payload.order_in_part
+    if payload.category is not None:
+        material.category = payload.category
+    if payload.resource_type is not None:
+        material.resource_type = payload.resource_type
+    if payload.description is not None:
+        material.description = payload.description
+    if payload.source is not None:
+        material.source = payload.source
+    if payload.tags is not None:
+        material.tags = payload.tags
 
     class_id = payload.class_id if payload.class_id is not None else material.class_id
     subject_id = payload.subject_id if payload.subject_id is not None else material.subject_id
@@ -436,3 +762,149 @@ def delete_material(material_id: int, db: Session = Depends(get_db), _: User = D
                 storage_service.delete_object(asset.thumbnail_object_key)
             db.delete(asset)
             db.commit()
+
+
+# --- Content Coverage & Overview ---
+
+
+@router.get("/coverage", response_model=CurriculumCoverageOut)
+def get_curriculum_coverage(
+    class_id: int, subject_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_smart_class_user)
+) -> CurriculumCoverageOut:
+    school_class = db.get(SchoolClass, class_id)
+    if not school_class:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found")
+    subject = db.get(Subject, subject_id)
+    if not subject:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subject not found")
+
+    chapters = (
+        db.query(Chapter)
+        .options(joinedload(Chapter.parts))
+        .filter(Chapter.class_id == class_id, Chapter.subject_id == subject_id)
+        .order_by(Chapter.order, Chapter.name)
+        .all()
+    )
+
+    chapters_coverage = []
+    total_resources = 0
+    total_topics = 0
+    scores = []
+
+    for chap in chapters:
+        topics_count = len(chap.parts)
+        total_topics += topics_count
+        mat_count = (
+            db.query(func.count(LearningMaterial.id)).filter(LearningMaterial.chapter_id == chap.id).scalar() or 0
+        )
+        total_resources += mat_count
+
+        cat_details = []
+        present_count = 0
+        for cat in CORE_CATEGORIES:
+            c_count = (
+                db.query(func.count(LearningMaterial.id))
+                .filter(
+                    LearningMaterial.chapter_id == chap.id,
+                    func.lower(LearningMaterial.category) == cat["category"].lower(),
+                )
+                .scalar()
+                or 0
+            )
+            has_mat = c_count > 0
+            if has_mat:
+                present_count += 1
+            cat_details.append(
+                CategoryCoverageDetail(
+                    category=cat["category"],
+                    label=cat["label"],
+                    has_material=has_mat,
+                    count=c_count,
+                )
+            )
+
+        chap_score = min(100, int((present_count / len(CORE_CATEGORIES)) * 100)) if mat_count > 0 else 0
+        scores.append(chap_score)
+
+        if chap_score >= 80:
+            status_text = "Excellent"
+        elif chap_score >= 60:
+            status_text = "Good"
+        elif mat_count > 0:
+            status_text = "Needs Material"
+        else:
+            status_text = "Limited"
+
+        chapters_coverage.append(
+            ChapterCoverageOut(
+                chapter_id=chap.id,
+                chapter_name=chap.name,
+                order=chap.order,
+                topics_count=topics_count,
+                resources_count=mat_count,
+                score=chap_score,
+                status=status_text,
+                categories=cat_details,
+            )
+        )
+
+    avg_score = int(sum(scores) / len(scores)) if scores else 0
+
+    return CurriculumCoverageOut(
+        class_id=school_class.id,
+        class_name=school_class.name,
+        subject_id=subject.id,
+        subject_name=subject.name,
+        total_chapters=len(chapters),
+        total_topics=total_topics,
+        total_resources=total_resources,
+        average_score=avg_score,
+        chapters=chapters_coverage,
+    )
+
+
+@router.get("/overview", response_model=list[ClassSubjectOverviewOut])
+def get_classes_overview(
+    db: Session = Depends(get_db), _: User = Depends(get_current_smart_class_user)
+) -> list[ClassSubjectOverviewOut]:
+    classes = db.query(SchoolClass).order_by(SchoolClass.order).all()
+    subjects = db.query(Subject).order_by(Subject.name).all()
+
+    overview = []
+    for c in classes:
+        for s in subjects:
+            chap_count = (
+                db.query(func.count(Chapter.id))
+                .filter(Chapter.class_id == c.id, Chapter.subject_id == s.id)
+                .scalar()
+                or 0
+            )
+            mat_count = (
+                db.query(func.count(LearningMaterial.id))
+                .filter(LearningMaterial.class_id == c.id, LearningMaterial.subject_id == s.id)
+                .scalar()
+                or 0
+            )
+            latest = (
+                db.query(LearningMaterial)
+                .filter(LearningMaterial.class_id == c.id, LearningMaterial.subject_id == s.id)
+                .order_by(LearningMaterial.created_at.desc())
+                .first()
+            )
+            # Only include cards where either chapters or materials exist, or standard pairs
+            if chap_count > 0 or mat_count > 0 or c.order < 5:
+                overview.append(
+                    ClassSubjectOverviewOut(
+                        class_id=c.id,
+                        class_name=c.name,
+                        subject_id=s.id,
+                        subject_name=s.name,
+                        chapters_count=chap_count,
+                        resources_count=mat_count,
+                        recent_material_title=latest.title if latest else None,
+                        recent_material_date=latest.created_at.isoformat() if latest else None,
+                    )
+                )
+
+    return overview
+

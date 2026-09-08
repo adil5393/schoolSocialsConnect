@@ -76,6 +76,13 @@ class LearningMaterial(Base):
     part_id: Mapped[int] = mapped_column(ForeignKey("chapter_parts.id"), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     order_in_part: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # Educational category: learn | understand | practice | reference (or specific subcategory like teacher_explanation, concept, example, practice, book_material, reference)
+    category: Mapped[str | None] = mapped_column(String(64), nullable=True, default="learn")
+    # Resource type: video | pdf | audio | image | presentation | link | interactive | worksheet | question_set | teacher_explanation | book_extract
+    resource_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    description: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    source: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    tags: Mapped[str | None] = mapped_column(String(512), nullable=True)
     created_by_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 

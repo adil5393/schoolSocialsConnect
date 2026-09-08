@@ -1,21 +1,35 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../lib/smartClassAuth.jsx';
+import WorkspaceSwitcher from './WorkspaceSwitcher';
 
-const navItems = [
-  { name: 'Smart Class Library', path: '/smart-class/library', icon: 'school' },
-  { name: 'Add Video', path: '/smart-class/add-video', icon: 'video_call' },
+const mainNavItems = [
+  { name: 'Smart Class Home', path: '/smart-class', icon: 'home', exact: true },
+  { name: 'My Classes', path: '/smart-class/classes', icon: 'school' },
+  { name: 'Library Search', path: '/smart-class/library', icon: 'search' },
+  { name: 'Curriculum Explorer', path: '/smart-class/curriculum', icon: 'account_tree' },
+  { name: 'Recent Lessons', path: '/smart-class/recent', icon: 'history' },
+  { name: 'Favorites', path: '/smart-class/favorites', icon: 'star' },
+  { name: 'Downloads / Offline', path: '/smart-class/offline', icon: 'download_for_offline' },
+  { name: 'My Uploads', path: '/smart-class/my-uploads', icon: 'upload_file' },
 ];
 
-const linkClass = ({ isActive }) =>
-  `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors duration-200 ${
-    isActive
-      ? 'text-primary font-bold border-l-2 border-primary bg-primary/5'
-      : 'text-on-surface-variant font-medium hover:bg-surface-variant/50'
-  }`;
+const teacherToolItems = [
+  { name: 'Add Material', path: '/smart-class/add-material', icon: 'add_circle', highlight: true },
+  { name: 'Manage Material', path: '/smart-class/manage-material', icon: 'edit_note' },
+  { name: 'Content Coverage', path: '/smart-class/coverage', icon: 'donut_large' },
+];
 
-export default function SmartClassSidebar({ variant = 'desktop' }) {
+const adminItems = [
+  { name: 'Curriculum Structure', path: '/smart-class/admin/curriculum', icon: 'account_tree' },
+  { name: 'Teachers & Subjects', path: '/smart-class/admin/teachers', icon: 'badge' },
+  { name: 'Library Management', path: '/smart-class/admin/library-management', icon: 'storage' },
+  { name: 'Manage Users', path: '/smart-class/admin/users', icon: 'admin_panel_settings' },
+];
+
+export default function SmartClassSidebar({ variant = 'desktop', onClose }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
@@ -23,43 +37,106 @@ export default function SmartClassSidebar({ variant = 'desktop' }) {
     navigate('/smart-class/login');
   };
 
+  const isLinkActive = (item) => {
+    if (item.exact) {
+      return location.pathname === item.path;
+    }
+    return location.pathname.startsWith(item.path);
+  };
+
+  const renderLink = (item) => {
+    const active = isLinkActive(item);
+    return (
+      <NavLink
+        key={item.name}
+        to={item.path}
+        onClick={onClose}
+        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group ${
+          item.highlight
+            ? active
+              ? 'bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container font-bold shadow-md'
+              : 'text-secondary hover:bg-secondary/10 font-semibold'
+            : active
+            ? 'text-secondary font-bold border-l-2 border-secondary bg-secondary/10'
+            : 'text-on-surface-variant font-medium hover:bg-surface-variant/40 hover:text-on-surface'
+        }`}
+      >
+        <span
+          className="material-symbols-outlined text-[20px] transition-transform group-hover:scale-110"
+          style={active ? { fontVariationSettings: "'FILL' 1" } : undefined}
+        >
+          {item.icon}
+        </span>
+        <span className="font-body-md text-body-md truncate">{item.name}</span>
+      </NavLink>
+    );
+  };
+
   const asideClass =
     variant === 'desktop'
       ? 'bg-surface-container-low border-r border-outline-variant/10 h-screen w-64 fixed left-0 top-0 hidden md:flex flex-col py-md px-sm z-50'
-      : 'flex flex-col w-full';
+      : 'flex flex-col w-full h-full';
 
   return (
     <aside className={asideClass}>
-      <div className="flex items-center gap-3 mb-8 px-2">
-        <div className="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center shrink-0">
-          <span className="material-symbols-outlined text-on-primary-container">school</span>
+      {/* Brand Header */}
+      <div className="flex items-center gap-3 mb-3 px-2">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-secondary-container to-secondary flex items-center justify-center shrink-0 shadow-md">
+          <span className="material-symbols-outlined text-on-secondary-container font-bold">school</span>
         </div>
         <div>
-          <h1 className="font-headline-sm text-headline-sm font-bold text-primary truncate leading-tight">Smart Class</h1>
-          <p className="font-label-md text-label-md text-on-surface-variant truncate">Learning Library</p>
+          <h1 className="font-headline-sm text-headline-sm font-bold text-secondary truncate leading-tight">Smart Class</h1>
+          <p className="font-label-md text-label-md text-on-surface-variant truncate">Teaching Library</p>
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto no-scrollbar space-y-1 pr-1">
-        {navItems.map((item) => (
-          <NavLink key={item.name} to={item.path} className={linkClass}>
-            <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
-            <span className="font-body-md text-body-md">{item.name}</span>
-          </NavLink>
-        ))}
+      {/* Top-Level Workspace Switcher */}
+      <div className="mb-4 px-1">
+        <WorkspaceSwitcher size="compact" className="w-full justify-center" />
+      </div>
+
+      {/* Navigation Sections */}
+      <nav className="flex-1 overflow-y-auto no-scrollbar space-y-4 pr-1 pb-4">
+        {/* Main Nav */}
+        <div className="space-y-1">
+          <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/60 mb-1">
+            Learning Library
+          </p>
+          {mainNavItems.map(renderLink)}
+        </div>
+
+        {/* Teacher Tools */}
+        <div className="space-y-1 pt-2 border-t border-outline-variant/10">
+          <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/60 mb-1">
+            Teacher Tools
+          </p>
+          {teacherToolItems.map(renderLink)}
+        </div>
+
+        {/* Admin Management */}
+        {user?.role === 'admin' && (
+          <div className="space-y-1 pt-2 border-t border-outline-variant/10">
+            <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-on-surface-variant/60 mb-1">
+              Administration
+            </p>
+            {adminItems.map(renderLink)}
+          </div>
+        )}
       </nav>
 
-      <div className="mt-auto pt-4 border-t border-outline-variant/10 space-y-1">
-        {user?.role === 'admin' && (
-          <NavLink to="/smart-class/admin/users" className={linkClass}>
-            <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
-            <span className="font-body-md text-body-md">Manage Users</span>
-          </NavLink>
-        )}
+      {/* Footer / Profile / Logout */}
+      <div className="mt-auto pt-3 border-t border-outline-variant/10 space-y-1">
         {user && (
-          <div className="px-3 pt-2 pb-1 truncate" title={user.email}>
-            <p className="font-body-sm text-body-sm text-on-surface font-semibold truncate">{user.full_name}</p>
-            <p className="font-label-md text-label-md text-on-surface-variant truncate">{user.email}</p>
+          <div className="px-3 py-1.5 rounded-lg bg-surface-variant/20 border border-outline-variant/10 mb-1" title={user.email}>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-xs">
+                {(user.full_name || user.email || 'T')[0].toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-body-sm text-body-sm text-on-surface font-semibold truncate leading-tight">{user.full_name}</p>
+                <p className="font-label-md text-[11px] text-on-surface-variant truncate">{user.email}</p>
+              </div>
+            </div>
           </div>
         )}
         <button
