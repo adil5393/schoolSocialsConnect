@@ -54,6 +54,10 @@ class Settings(BaseSettings):
     # used per attempt, with retries on other proxies. Takes precedence over youtube_proxy.
     webshare_api_key: str = ""
     youtube_proxy_retries: int = 3
+    # "direct" for datacenter/ISP plans, "backbone" for residential plans (Webshare requires it).
+    webshare_proxy_mode: str = "direct"
+    # Optional: target a specific Webshare plan (otherwise the account's default plan is used).
+    webshare_plan_id: str = ""
     youtube_cookies_file: str = ""
     # Separate from youtube_download_timeout on purpose: that one bounds a single socket
     # operation during download, while transcoding a long video can legitimately take much

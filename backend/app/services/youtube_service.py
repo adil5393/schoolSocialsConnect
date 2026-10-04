@@ -65,8 +65,9 @@ def _webshare_proxies(force: bool = False) -> list[str]:
         if _proxy_cache["proxies"] and fresh and not force:
             return _proxy_cache["proxies"]
         try:
+            plan = f"&plan_id={settings.webshare_plan_id}" if settings.webshare_plan_id else ""
             req = urllib.request.Request(
-                "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=100",
+                f"https://proxy.webshare.io/api/v2/proxy/list/?mode={settings.webshare_proxy_mode}&page=1&page_size=100{plan}",
                 headers={"Authorization": f"Token {settings.webshare_api_key}"},
             )
             with urllib.request.urlopen(req, timeout=15) as resp:
