@@ -22,7 +22,11 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio:latest
+
+    build:
+      context: ./minio
+
+    image: schoolsocials-minio-local
     container_name: schoolsocials-minio
 
     command: server /data --console-address ":9001"
