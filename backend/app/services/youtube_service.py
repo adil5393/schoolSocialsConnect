@@ -1,3 +1,4 @@
+import logging
 import re
 import shutil
 import uuid
@@ -8,6 +9,8 @@ import yt_dlp
 
 from app.core.config import settings
 from app.schemas.youtube import YouTubeFormatOut, YouTubeInfoResponse
+
+logger = logging.getLogger(__name__)
 
 _ALLOWED_HOSTS = {
     "youtube.com",
@@ -46,8 +49,20 @@ def validate_youtube_url(url: str) -> None:
         raise YouTubeError("Only youtube.com and youtu.be links are supported", 400)
 
 
+def _network_opts() -> dict:
+    opts: dict = {}
+    if settings.youtube_proxy:
+        opts["proxy"] = settings.youtube_proxy
+    if settings.youtube_cookies_file and Path(settings.youtube_cookies_file).is_file():
+        opts["cookiefile"] = settings.youtube_cookies_file
+    return opts
+
+
 def _friendly_error(raw: str) -> str:
+    logger.error("yt-dlp failed: %s", raw)
     lowered = raw.lower()
+    if "not a bot" in lowered or "confirm you" in lowered:
+        return "YouTube is blocking this server's IP address. Configure YOUTUBE_PROXY or YOUTUBE_COOKIES_FILE."
     if "private video" in lowered:
         return "This video is private and cannot be downloaded."
     if "video unavailable" in lowered:
@@ -73,6 +88,7 @@ def _extract_info(url: str) -> dict:
         "skip_download": True,
         "noplaylist": True,
         "socket_timeout": 30,
+        **_network_opts(),
     }
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -157,6 +173,7 @@ def download_media(url: str, media_type: str, fmt: str, quality: str) -> tuple[P
             "noplaylist": True,
             "outtmpl": output_template,
             "socket_timeout": settings.youtube_download_timeout,
+            **_network_opts(),
         }
 
         if media_type == "video":

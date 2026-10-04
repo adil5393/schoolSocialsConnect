@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     youtube_download_max_duration: int = 7200  # seconds
     youtube_download_max_file_mb: int = 1000
     youtube_download_timeout: int = 600  # seconds, per network operation
+    # YouTube blocks most datacenter/VPS IPs ("Sign in to confirm you're not a bot"). Workarounds:
+    # route through a residential proxy and/or supply an exported cookies.txt (Netscape format).
+    youtube_proxy: str = ""
+    youtube_cookies_file: str = ""
     # Separate from youtube_download_timeout on purpose: that one bounds a single socket
     # operation during download, while transcoding a long video can legitimately take much
     # longer on a modest server -- conflating the two caused real timeouts in production.
