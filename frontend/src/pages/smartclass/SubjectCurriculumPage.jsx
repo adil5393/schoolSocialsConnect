@@ -77,25 +77,25 @@ export default function SubjectCurriculumPage() {
       <main className="flex-1 w-full overflow-y-auto pb-32 md:pb-24">
         <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-md md:py-lg flex flex-col gap-6">
           {/* Top Class & Subject Switcher Header */}
-          <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/20 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-secondary mb-2">
+          <div className="bg-surface-container-low rounded-2xl p-4 sm:p-6 border border-outline-variant/20 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 min-w-0">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-secondary mb-1.5">
                 <span>Structured Curriculum</span>
                 <span>•</span>
                 <span>{chapters.length} Chapters Total</span>
               </div>
 
-              <h1 className="font-headline-lg text-2xl md:text-3xl font-bold text-on-surface">
+              <h1 className="font-headline-lg text-xl sm:text-2xl md:text-3xl font-bold text-on-surface break-words">
                 Class {activeClass?.name} — {activeSubject?.name}
               </h1>
-              <p className="text-sm text-on-surface-variant mt-1">
+              <p className="text-xs sm:text-sm text-on-surface-variant mt-1">
                 Explore topics, interactive explanations, NCERT exercises, and classroom resources chapter by chapter.
               </p>
             </div>
 
             {/* Selectors for quick switching */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div>
+            <div className="flex flex-col xs:flex-row items-stretch xs:items-end gap-2.5 sm:gap-3">
+              <div className="flex-1 xs:flex-initial">
                 <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-1">
                   Class
                 </label>
@@ -105,7 +105,7 @@ export default function SubjectCurriculumPage() {
                     setCurrentClassId(e.target.value);
                     navigate(`/smart-class/curriculum/${e.target.value}/${currentSubjectId}`);
                   }}
-                  className="bg-surface-container-high border border-outline-variant/30 rounded-xl px-3 py-2 text-xs text-on-surface font-semibold cursor-pointer"
+                  className="w-full xs:w-auto bg-surface-container-high border border-outline-variant/30 rounded-xl px-3 py-2 text-xs text-on-surface font-semibold cursor-pointer"
                 >
                   {classes.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -115,7 +115,7 @@ export default function SubjectCurriculumPage() {
                 </select>
               </div>
 
-              <div>
+              <div className="flex-1 xs:flex-initial">
                 <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-1">
                   Subject
                 </label>
@@ -125,7 +125,7 @@ export default function SubjectCurriculumPage() {
                     setCurrentSubjectId(e.target.value);
                     navigate(`/smart-class/curriculum/${currentClassId}/${e.target.value}`);
                   }}
-                  className="bg-surface-container-high border border-outline-variant/30 rounded-xl px-3 py-2 text-xs text-on-surface font-semibold cursor-pointer"
+                  className="w-full xs:w-auto bg-surface-container-high border border-outline-variant/30 rounded-xl px-3 py-2 text-xs text-on-surface font-semibold cursor-pointer"
                 >
                   {subjects.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -135,11 +135,11 @@ export default function SubjectCurriculumPage() {
                 </select>
               </div>
 
-              <div className="self-end">
+              <div>
                 <button
                   type="button"
                   onClick={() => navigate('/smart-class/add-material')}
-                  className="px-4 py-2 bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container rounded-xl text-xs font-bold hover:opacity-90 flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  className="w-full xs:w-auto px-4 py-2 bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container rounded-xl text-xs font-bold hover:opacity-90 flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">add</span>
                   <span>Add Material</span>
@@ -216,22 +216,22 @@ export default function SubjectCurriculumPage() {
                     onClick={() =>
                       navigate(`/smart-class/curriculum/${currentClassId}/${currentSubjectId}/${chap.id}`)
                     }
-                    className="group bg-surface-container-low hover:bg-surface-container p-5 rounded-2xl border border-outline-variant/20 hover:border-secondary/50 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between"
+                    className="group bg-surface-container-low hover:bg-surface-container p-4 sm:p-5 rounded-2xl border border-outline-variant/20 hover:border-secondary/50 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between min-w-0"
                   >
-                    <div>
+                    <div className="min-w-0">
                       {/* Chapter number & coverage badge */}
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-surface-dim text-on-surface border border-outline-variant/30">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 min-w-0">
+                        <span className="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-surface-dim text-on-surface border border-outline-variant/30 shrink-0">
                           CHAPTER {String(idx + 1).padStart(2, '0')}
                         </span>
 
-                        <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${badgeStyles}`}>
+                        <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border shrink-0 ${badgeStyles}`}>
                           {coverageStatus} ({coverageScore}%)
                         </span>
                       </div>
 
                       {/* Chapter Name */}
-                      <h3 className="font-headline-sm text-lg font-bold text-on-surface group-hover:text-secondary transition-colors mb-2 leading-snug">
+                      <h3 className="font-headline-sm text-base sm:text-lg font-bold text-on-surface group-hover:text-secondary transition-colors mb-2 leading-snug break-words">
                         {chap.name}
                       </h3>
 
@@ -241,13 +241,13 @@ export default function SubjectCurriculumPage() {
                           {chap.parts.slice(0, 4).map((p) => (
                             <span
                               key={p.id}
-                              className="px-2 py-0.5 rounded-md bg-surface-dim text-[11px] text-on-surface-variant font-medium truncate max-w-[160px]"
+                              className="px-2 py-0.5 rounded-md bg-surface-dim text-[11px] text-on-surface-variant font-medium truncate max-w-[140px] sm:max-w-[160px]"
                             >
                               {p.title}
                             </span>
                           ))}
                           {chap.parts.length > 4 && (
-                            <span className="px-2 py-0.5 rounded-md bg-surface-dim text-[11px] text-secondary font-semibold">
+                            <span className="px-2 py-0.5 rounded-md bg-surface-dim text-[11px] text-secondary font-semibold shrink-0">
                               +{chap.parts.length - 4} more
                             </span>
                           )}
@@ -256,7 +256,7 @@ export default function SubjectCurriculumPage() {
                     </div>
 
                     {/* Progress Bar & Footer */}
-                    <div className="pt-3 border-t border-outline-variant/10">
+                    <div className="pt-3 border-t border-outline-variant/10 min-w-0">
                       {/* Visual coverage bar */}
                       <div className="w-full bg-surface-dim h-1.5 rounded-full overflow-hidden mb-3">
                         <div
@@ -273,20 +273,20 @@ export default function SubjectCurriculumPage() {
                         />
                       </div>
 
-                      <div className="flex items-center justify-between text-xs text-on-surface-variant font-medium">
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center gap-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-on-surface-variant font-medium min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
+                          <span className="flex items-center gap-1 shrink-0">
                             <span className="material-symbols-outlined text-[16px]">account_tree</span>
                             <span>{chap.topics_count || chap.parts?.length || 0} Topics</span>
                           </span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
+                          <span className="text-outline-variant/60">•</span>
+                          <span className="flex items-center gap-1 shrink-0">
                             <span className="material-symbols-outlined text-[16px]">video_library</span>
                             <span>{chap.resources_count || 0} Resources</span>
                           </span>
                         </div>
 
-                        <span className="text-secondary font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                        <span className="text-secondary font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1 shrink-0 self-end sm:self-auto">
                           <span>Open Workspace</span>
                           <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                         </span>

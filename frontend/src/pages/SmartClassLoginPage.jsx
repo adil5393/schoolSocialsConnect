@@ -28,17 +28,17 @@ export default function SmartClassLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="w-full max-w-sm bg-surface-container-low rounded-2xl p-8 card-border">
-        <div className="flex items-center gap-3 mb-8">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-surface-container-low rounded-2xl p-5 sm:p-8 card-border min-w-0">
+        <div className="flex items-center gap-3 mb-6 sm:mb-8 min-w-0">
           <img
             src="/app-icon.png"
             alt="Smart Class"
             className="w-11 h-11 rounded-xl shadow-md object-contain shrink-0"
           />
-          <div>
-            <h1 className="font-headline-sm text-headline-sm font-bold text-secondary leading-tight">Smart Class</h1>
-            <p className="font-label-md text-label-md text-on-surface-variant">Digital Teaching Library</p>
+          <div className="min-w-0">
+            <h1 className="font-headline-sm text-headline-sm font-bold text-secondary leading-tight truncate">Smart Class</h1>
+            <p className="font-label-md text-label-md text-on-surface-variant truncate">Digital Teaching Library</p>
           </div>
         </div>
 

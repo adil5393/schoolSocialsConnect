@@ -19,7 +19,7 @@ export default function SmartClassLayout() {
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="absolute left-0 top-0 bottom-0 w-72 bg-surface-container-low p-4 flex flex-col shadow-2xl border-r border-outline-variant/20 z-50">
+          <div className="absolute left-0 top-0 bottom-0 w-[82vw] max-w-xs bg-surface-container-low p-4 flex flex-col shadow-2xl border-r border-outline-variant/20 z-50">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2.5">
                 <img
@@ -47,7 +47,7 @@ export default function SmartClassLayout() {
       <div
         className={`flex-1 ${
           isCollapsed ? 'md:ml-20' : 'md:ml-64'
-        } transition-all duration-300 ease-in-out flex flex-col min-h-screen relative w-full overflow-x-hidden`}
+        } transition-all duration-300 ease-in-out flex flex-col min-h-screen relative min-w-0 md:w-auto`}
       >
         <Outlet context={{ setMobileMenuOpen }} />
       </div>

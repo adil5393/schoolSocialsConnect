@@ -268,10 +268,10 @@ export default function AddMaterialPage() {
     return (
       <div className="flex-1 flex flex-col min-h-screen bg-background">
         <SmartClassTopBar onToggleMobileMenu={() => setMobileMenuOpen && setMobileMenuOpen(true)} />
-        <main className="flex-1 flex items-center justify-center p-4">
-          <div className="max-w-xl w-full bg-surface-container-low rounded-3xl p-8 border border-secondary/40 shadow-2xl text-center flex flex-col items-center gap-5">
+        <main className="flex-1 flex items-center justify-center p-3 sm:p-4">
+          <div className="max-w-xl w-full bg-surface-container-low rounded-3xl p-5 sm:p-8 border border-secondary/40 shadow-2xl text-center flex flex-col items-center gap-4 sm:gap-5 min-w-0">
             <div
-              className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
+              className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shrink-0 ${
                 isProcessing
                   ? 'bg-amber-500/15 border border-amber-500/30 text-amber-500'
                   : isFailed
@@ -288,7 +288,7 @@ export default function AddMaterialPage() {
               )}
             </div>
 
-            <div>
+            <div className="min-w-0 w-full">
               <span className="text-xs uppercase font-bold tracking-wider text-secondary">
                 {isProcessing
                   ? 'Material Saved — Processing Media'
@@ -296,10 +296,12 @@ export default function AddMaterialPage() {
                   ? 'Material Saved in Library'
                   : 'Material Successfully Saved'}
               </span>
-              <h2 className="font-headline-md text-2xl font-bold text-on-surface mt-1">{savedMaterial.title}</h2>
+              <h2 className="font-headline-md text-xl sm:text-2xl font-bold text-on-surface mt-1 break-words">
+                {savedMaterial.title}
+              </h2>
               {isProcessing && (
-                <p className="text-xs text-on-surface-variant mt-1.5 flex items-center justify-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
+                <p className="text-xs text-on-surface-variant mt-1.5 flex items-center justify-center gap-1.5 flex-wrap">
+                  <span className="w-2 h-2 rounded-full bg-secondary animate-pulse shrink-0" />
                   <span>
                     {savedMaterial.processing_stage
                       ? `Stage: ${savedMaterial.processing_stage}...`
@@ -308,33 +310,33 @@ export default function AddMaterialPage() {
                 </p>
               )}
               {isFailed && (
-                <p className="text-xs text-on-surface-variant mt-1.5">
+                <p className="text-xs text-on-surface-variant mt-1.5 break-words">
                   {savedMaterial.error_message || 'Original file is safely stored. Presentation preview could not be generated.'}
                 </p>
               )}
             </div>
 
             {/* Saved Location Card */}
-            <div className="w-full bg-surface-dim p-4 rounded-2xl border border-outline-variant/20 text-left space-y-2">
+            <div className="w-full bg-surface-dim p-3.5 sm:p-4 rounded-2xl border border-outline-variant/20 text-left space-y-2 min-w-0">
               <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Curriculum Destination:</p>
-              <div className="flex flex-wrap items-center gap-1.5 text-xs text-on-surface font-semibold">
-                <span className="px-2 py-0.5 rounded bg-secondary/20 text-secondary">Class {savedMaterial.class_name}</span>
-                <span>→</span>
-                <span>{savedMaterial.subject_name}</span>
-                <span>→</span>
-                <span>{savedMaterial.chapter_name}</span>
-                <span>→</span>
-                <span className="text-secondary">{savedMaterial.part_title}</span>
+              <div className="flex flex-wrap items-center gap-1.5 text-xs text-on-surface font-semibold min-w-0">
+                <span className="px-2 py-0.5 rounded bg-secondary/20 text-secondary shrink-0">Class {savedMaterial.class_name}</span>
+                <span className="shrink-0">→</span>
+                <span className="shrink-0">{savedMaterial.subject_name}</span>
+                <span className="shrink-0">→</span>
+                <span className="break-words">{savedMaterial.chapter_name}</span>
+                <span className="shrink-0">→</span>
+                <span className="text-secondary break-words">{savedMaterial.part_title}</span>
               </div>
             </div>
 
             {duplicateNotice && (
-              <p className="text-xs text-on-surface-variant bg-surface-dim p-3 rounded-xl border border-outline-variant/20">
+              <p className="text-xs text-on-surface-variant bg-surface-dim p-3 rounded-xl border border-outline-variant/20 break-words w-full text-left">
                 This media was already stored in: {duplicateNotice.join(', ')}. It has been assigned to this topic instantly without duplicating storage.
               </p>
             )}
 
-            <div className="flex gap-3 w-full pt-2">
+            <div className="flex flex-col sm:flex-row gap-3 w-full pt-2">
               <button
                 type="button"
                 onClick={() =>
@@ -342,7 +344,7 @@ export default function AddMaterialPage() {
                     `/smart-class/curriculum/${savedMaterial.class_id}/${savedMaterial.subject_id}/${savedMaterial.chapter_id}`
                   )
                 }
-                className="flex-1 py-3 bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container rounded-xl font-bold text-sm hover:opacity-95 shadow-lg cursor-pointer"
+                className="flex-1 py-3 px-4 bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container rounded-xl font-bold text-sm hover:opacity-95 shadow-lg cursor-pointer text-center"
               >
                 Open in Chapter Workspace
               </button>
@@ -383,8 +385,8 @@ export default function AddMaterialPage() {
           </div>
 
           {/* LIVE DESTINATION BREADCRUMB PREVIEW BANNER */}
-          <div className="bg-gradient-to-r from-surface-container-high to-surface-container-low p-4 md:p-5 rounded-2xl border border-secondary/40 shadow-md">
-            <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="bg-gradient-to-r from-surface-container-high to-surface-container-low p-3.5 sm:p-5 rounded-2xl border border-secondary/40 shadow-md min-w-0">
+            <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1 mb-2">
               <span className="text-xs font-bold uppercase tracking-wider text-secondary flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">location_on</span>
                 <span>Saving Directly To:</span>
@@ -392,37 +394,43 @@ export default function AddMaterialPage() {
               <span className="text-[11px] text-on-surface-variant font-medium">Live Curriculum Destination</span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm font-semibold text-on-surface">
-              <span className="px-2.5 py-1 rounded-lg bg-secondary/15 text-secondary border border-secondary/30">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs md:text-sm font-semibold text-on-surface min-w-0">
+              <span className="px-2.5 py-1 rounded-lg bg-secondary/15 text-secondary border border-secondary/30 shrink-0">
                 Class {selectedClassObj?.name || '...'}
               </span>
-              <span className="text-outline-variant">→</span>
-              <span className="px-2 py-1 rounded-lg bg-surface-dim border border-outline-variant/20">
+              <span className="text-outline-variant shrink-0">→</span>
+              <span className="px-2 py-1 rounded-lg bg-surface-dim border border-outline-variant/20 shrink-0">
                 {selectedSubjectObj?.name || '...'}
               </span>
-              <span className="text-outline-variant">→</span>
-              <span className="px-2 py-1 rounded-lg bg-surface-dim border border-outline-variant/20">
+              <span className="text-outline-variant shrink-0">→</span>
+              <span
+                title={chapterName.trim()}
+                className="px-2 py-1 rounded-lg bg-surface-dim border border-outline-variant/20 max-w-[150px] sm:max-w-xs truncate"
+              >
                 {chapterName.trim() || '(Enter Chapter Name)'}
               </span>
-              <span className="text-outline-variant">→</span>
-              <span className="px-2 py-1 rounded-lg bg-surface-dim border border-outline-variant/20 text-secondary">
+              <span className="text-outline-variant shrink-0">→</span>
+              <span
+                title={partTitle.trim()}
+                className="px-2 py-1 rounded-lg bg-surface-dim border border-outline-variant/20 text-secondary max-w-[150px] sm:max-w-xs truncate"
+              >
                 {partTitle.trim() || '(Enter Topic Title)'}
               </span>
-              <span className="text-outline-variant">→</span>
-              <span className="px-2 py-1 rounded-lg bg-secondary-container/20 text-secondary border border-secondary/30">
+              <span className="text-outline-variant shrink-0">→</span>
+              <span className="px-2 py-1 rounded-lg bg-secondary-container/20 text-secondary border border-secondary/30 shrink-0">
                 {selectedCategoryObj?.name || 'Category'}
               </span>
             </div>
           </div>
 
           {errorMessage && (
-            <div className="bg-error-container/10 border border-error/30 text-error rounded-xl p-4 text-sm font-medium">
+            <div className="bg-error-container/10 border border-error/30 text-error rounded-xl p-4 text-sm font-medium break-words">
               {errorMessage}
             </div>
           )}
 
           {/* 8-STEP WIZARD FORM */}
-          <div className="bg-surface-container-low rounded-3xl p-6 md:p-8 border border-outline-variant/20 shadow-md space-y-8">
+          <div className="bg-surface-container-low rounded-3xl p-4 sm:p-6 md:p-8 border border-outline-variant/20 shadow-md space-y-6 sm:space-y-8 min-w-0">
             {/* STEP 1 & 2: CLASS & SUBJECT */}
             <div>
               <h3 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-2 mb-3">
@@ -617,7 +625,7 @@ export default function AddMaterialPage() {
               </h3>
 
               {/* Source Switcher */}
-              <div className="flex gap-3 mb-4">
+              <div className="flex flex-col xs:flex-row gap-2.5 sm:gap-3 mb-4">
                 <button
                   type="button"
                   onClick={() => setSourceMode('upload')}
@@ -646,7 +654,7 @@ export default function AddMaterialPage() {
               </div>
 
               {sourceMode === 'upload' ? (
-                <div className="border-2 border-dashed border-outline-variant/40 hover:border-secondary/50 rounded-2xl p-6 text-center bg-surface-container-high/30 transition-colors">
+                <div className="border-2 border-dashed border-outline-variant/40 hover:border-secondary/50 rounded-2xl p-4 sm:p-6 text-center bg-surface-container-high/30 transition-colors min-w-0">
                   <input
                     type="file"
                     id="material-file-upload"
@@ -654,9 +662,9 @@ export default function AddMaterialPage() {
                     className="hidden"
                     accept="video/*,application/pdf,image/*,.ppt,.pptx,.doc,.docx"
                   />
-                  <label htmlFor="material-file-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                  <label htmlFor="material-file-upload" className="cursor-pointer flex flex-col items-center gap-2 min-w-0 w-full">
                     <span className="material-symbols-outlined text-[42px] text-secondary">cloud_upload</span>
-                    <p className="text-sm font-bold text-on-surface">
+                    <p className="text-sm font-bold text-on-surface break-all px-2 max-w-full">
                       {selectedFile ? selectedFile.name : 'Click to select a file or drag and drop here'}
                     </p>
                     <p className="text-xs text-on-surface-variant">
@@ -665,8 +673,8 @@ export default function AddMaterialPage() {
                   </label>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <div className="flex gap-2">
+                <div className="space-y-3 min-w-0">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="url"
                       value={url}
@@ -675,21 +683,21 @@ export default function AddMaterialPage() {
                         setFetchStatus('idle');
                       }}
                       placeholder="Paste YouTube or public resource link (e.g. https://youtu.be/...)"
-                      className="flex-1 bg-surface-container-high border border-outline-variant/30 rounded-xl px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:border-secondary"
+                      className="flex-1 bg-surface-container-high border border-outline-variant/30 rounded-xl px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:border-secondary min-w-0"
                     />
                     <button
                       type="button"
                       onClick={handleFetchYouTube}
                       disabled={fetchStatus === 'fetching' || !url.trim()}
-                      className="px-5 py-2.5 bg-surface-variant text-on-surface rounded-xl text-xs font-bold hover:bg-surface-container-high transition-colors cursor-pointer border border-outline-variant/30 disabled:opacity-50"
+                      className="w-full sm:w-auto px-5 py-2.5 bg-surface-variant text-on-surface rounded-xl text-xs font-bold hover:bg-surface-container-high transition-colors cursor-pointer border border-outline-variant/30 disabled:opacity-50 shrink-0"
                     >
                       {fetchStatus === 'fetching' ? 'Fetching...' : 'Fetch Info'}
                     </button>
                   </div>
 
                   {videoInfo && (
-                    <div className="p-3 bg-surface-dim rounded-xl border border-secondary/30 flex items-center gap-3">
-                      <span className="material-symbols-outlined text-secondary text-[24px]">play_circle</span>
+                    <div className="p-3 bg-surface-dim rounded-xl border border-secondary/30 flex items-center gap-3 min-w-0">
+                      <span className="material-symbols-outlined text-secondary text-[24px] shrink-0">play_circle</span>
                       <div className="min-w-0 flex-1 text-xs">
                         <p className="font-bold text-on-surface truncate">{videoInfo.title}</p>
                         <p className="text-on-surface-variant">{videoInfo.duration ? `${Math.floor(videoInfo.duration / 60)} mins` : 'YouTube Link'}</p>

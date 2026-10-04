@@ -21,25 +21,25 @@ export default function TopAppBar({ title, showSearch = false, searchPlaceholder
     .toUpperCase();
 
   return (
-    <header className="docked full-width top-0 sticky z-40 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/10 flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-xs h-16">
+    <header className="docked full-width top-0 sticky z-40 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/10 flex justify-between items-center w-full px-3 sm:px-margin-mobile md:px-margin-desktop py-xs h-16 min-w-0">
       {/* Mobile Title & Menu Toggle */}
-      <div className="flex items-center gap-3 md:hidden">
+      <div className="flex items-center gap-2 sm:gap-3 md:hidden min-w-0 flex-1">
         {onToggleMobileMenu && (
           <button
             onClick={onToggleMobileMenu}
-            className="text-on-surface-variant hover:bg-surface-variant/30 rounded-full p-2 transition-colors"
+            className="text-on-surface-variant hover:bg-surface-variant/30 rounded-full p-2 transition-colors shrink-0 cursor-pointer"
             aria-label="Toggle menu"
           >
             <span className="material-symbols-outlined">menu</span>
           </button>
         )}
-        <Link to="/dashboard" className="font-headline-sm text-headline-sm font-bold text-primary truncate flex items-center gap-2">
+        <Link to="/dashboard" className="font-headline-sm text-sm sm:text-headline-sm font-bold text-primary truncate flex items-center gap-2 min-w-0">
           <img
             src="/app-icon.png"
             alt="SchoolSocials"
             className="w-6 h-6 rounded-md object-contain shrink-0"
           />
-          <span>SchoolSocials</span>
+          <span className="truncate">SchoolSocials</span>
         </Link>
       </div>
 

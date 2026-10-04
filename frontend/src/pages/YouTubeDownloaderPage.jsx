@@ -122,13 +122,13 @@ export default function YouTubeDownloaderPage() {
           </div>
 
           {/* URL input */}
-          <form onSubmit={handleFetchInfo} className="bg-surface-container-low rounded-xl p-md card-border flex flex-col sm:flex-row gap-3">
+          <form onSubmit={handleFetchInfo} className="bg-surface-container-low rounded-xl p-3.5 sm:p-md card-border flex flex-col sm:flex-row gap-3 min-w-0">
             <input
               type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://www.youtube.com/watch?v=..."
-              className="flex-1 bg-surface-dim border border-outline-variant/30 rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-on-surface-variant/50"
+              className="flex-1 bg-surface-dim border border-outline-variant/30 rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-on-surface-variant/50 min-w-0"
             />
             <button
               type="submit"
@@ -143,14 +143,14 @@ export default function YouTubeDownloaderPage() {
             <p className="mt-3 font-body-sm text-body-sm text-on-surface-variant">Fetching video information…</p>
           )}
           {status === 'error' && errorMessage && (
-            <div className="mt-3 bg-error-container/10 border border-error/30 text-error rounded-lg px-4 py-3 font-body-sm text-body-sm">
+            <div className="mt-3 bg-error-container/10 border border-error/30 text-error rounded-lg px-4 py-3 font-body-sm text-body-sm break-words">
               {errorMessage}
             </div>
           )}
 
           {/* Video info card */}
           {info && (
-            <div className="mt-lg bg-surface-container-low rounded-xl p-md card-border flex flex-col sm:flex-row gap-md">
+            <div className="mt-lg bg-surface-container-low rounded-xl p-3.5 sm:p-md card-border flex flex-col sm:flex-row gap-4 min-w-0">
               {info.thumbnail && (
                 <img
                   src={info.thumbnail}
@@ -159,7 +159,7 @@ export default function YouTubeDownloaderPage() {
                 />
               )}
               <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-                <h3 className="font-headline-sm text-headline-sm font-semibold text-on-surface line-clamp-2">{info.title}</h3>
+                <h3 className="font-headline-sm text-headline-sm font-semibold text-on-surface line-clamp-2 break-words">{info.title}</h3>
                 {info.uploader && <p className="font-body-sm text-body-sm text-on-surface-variant">{info.uploader}</p>}
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 font-label-md text-label-md text-on-surface-variant">
                   {info.duration != null && (

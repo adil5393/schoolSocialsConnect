@@ -154,27 +154,28 @@ export default function TeachPresentMode({
       )}
 
       {/* Top Presentation Bar: Minimal Distraction-Free Header */}
-      <header className="h-14 px-4 md:px-6 bg-surface-container-lowest/90 backdrop-blur-md border-b border-outline-variant/15 flex items-center justify-between shrink-0 z-40">
+      <header className="h-14 px-3 sm:px-4 md:px-6 bg-surface-container-lowest/90 backdrop-blur-md border-b border-outline-variant/15 flex items-center justify-between shrink-0 z-40 min-w-0">
         {/* Left: Back to Topic & Curriculum context */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-variant/40 hover:bg-surface-variant text-on-surface font-semibold text-xs md:text-sm transition-colors cursor-pointer border border-outline-variant/20"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-surface-variant/40 hover:bg-surface-variant text-on-surface font-semibold text-xs md:text-sm transition-colors cursor-pointer border border-outline-variant/20 shrink-0"
             title="Exit Present Mode (Esc)"
           >
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Back to Topic</span>
+            <span className="hidden sm:inline">Back to Topic</span>
+            <span className="sm:hidden">Back</span>
           </button>
 
-          <div className="hidden sm:flex items-center gap-2 text-xs text-on-surface-variant truncate">
-            <span className="font-bold text-secondary">Class {material.class_name}</span>
+          <div className="hidden sm:flex items-center gap-2 text-xs text-on-surface-variant min-w-0 truncate">
+            <span className="font-bold text-secondary shrink-0">Class {material.class_name}</span>
             <span>•</span>
-            <span>{material.subject_name}</span>
+            <span className="truncate">{material.subject_name}</span>
             <span>•</span>
-            <span className="text-on-surface font-medium truncate max-w-[200px]">{material.chapter_name}</span>
+            <span className="text-on-surface font-medium truncate max-w-[160px] md:max-w-[200px]">{material.chapter_name}</span>
             <span>•</span>
-            <span className="text-secondary truncate max-w-[180px]">{material.part_title}</span>
+            <span className="text-secondary truncate max-w-[140px] md:max-w-[180px]">{material.part_title}</span>
           </div>
         </div>
 
@@ -424,20 +425,25 @@ export default function TeachPresentMode({
 
         {/* Sidebar Topic Resources Drawer */}
         {showDrawer && (
-          <div className="absolute right-0 top-0 bottom-0 w-80 bg-surface-container-high/95 backdrop-blur-xl border-l border-outline-variant/20 p-4 flex flex-col shadow-2xl z-40 animate-in slide-in-from-right duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-outline-variant/15 mb-3">
-              <div>
-                <h3 className="font-headline-sm text-sm font-bold text-on-surface">Topic Resources</h3>
-                <p className="text-xs text-on-surface-variant">{material.part_title}</p>
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
+              onClick={() => setShowDrawer(false)}
+            />
+            <div className="absolute right-0 top-0 bottom-0 w-[82vw] max-w-xs sm:w-80 bg-surface-container-high/95 backdrop-blur-xl border-l border-outline-variant/20 p-4 flex flex-col shadow-2xl z-40 animate-in slide-in-from-right duration-200">
+              <div className="flex items-center justify-between pb-3 border-b border-outline-variant/15 mb-3">
+                <div>
+                  <h3 className="font-headline-sm text-sm font-bold text-on-surface">Topic Resources</h3>
+                  <p className="text-xs text-on-surface-variant truncate max-w-[200px]">{material.part_title}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDrawer(false)}
+                  className="p-1 rounded-lg hover:bg-surface-variant text-on-surface-variant hover:text-on-surface cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowDrawer(false)}
-                className="p-1 rounded-lg hover:bg-surface-variant text-on-surface-variant hover:text-on-surface cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
 
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 no-scrollbar">
               {allMaterialsInTopic.map((m, idx) => {
@@ -473,45 +479,46 @@ export default function TeachPresentMode({
               })}
             </div>
           </div>
+          </>
         )}
       </main>
 
       {/* Bottom Classroom Controls Bar */}
-      <footer className="h-16 px-4 md:px-8 bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/15 flex items-center justify-between shrink-0 z-40">
+      <footer className="h-14 sm:h-16 px-2.5 sm:px-4 md:px-8 bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/15 flex items-center justify-between shrink-0 z-40 min-w-0">
         {/* Left: Previous Resource / Slide Button */}
         <button
           type="button"
           onClick={handlePrevSlide}
           disabled={isPresentation ? currentSlideIndex === 0 && !hasPrevMaterial : !hasPrevMaterial}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer border ${
+          className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer border ${
             (isPresentation ? currentSlideIndex > 0 || hasPrevMaterial : hasPrevMaterial)
               ? 'bg-surface-container-high hover:bg-surface-variant text-on-surface border-outline-variant/30 hover:border-secondary/40 shadow-sm'
               : 'opacity-40 cursor-not-allowed border-transparent text-on-surface-variant/50'
           }`}
           title="Previous (Left Arrow / PageUp)"
         >
-          <span className="material-symbols-outlined text-[20px]">arrow_back_ios</span>
+          <span className="material-symbols-outlined text-[18px] sm:text-[20px]">arrow_back_ios</span>
           <span className="hidden sm:inline">{isPresentation && currentSlideIndex > 0 ? 'Prev Slide' : 'Previous'}</span>
         </button>
 
         {/* Center: Slide Counter or Topic Position */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {isPresentation && totalSlides > 0 ? (
-            <div className="flex items-center gap-2 bg-surface-container-high px-3 py-1 rounded-lg border border-outline-variant/20">
-              <span className="material-symbols-outlined text-orange-400 text-[16px]">slideshow</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-surface-container-high px-2.5 sm:px-3 py-1 rounded-lg border border-outline-variant/20">
+              <span className="material-symbols-outlined text-orange-400 text-[14px] sm:text-[16px]">slideshow</span>
               <span className="text-xs md:text-sm font-bold text-on-surface">
-                Slide <span className="text-secondary">{currentSlideIndex + 1}</span> of {totalSlides}
+                <span className="hidden xs:inline">Slide </span><span className="text-secondary">{currentSlideIndex + 1}</span> / {totalSlides}
               </span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 sm:gap-1.5">
               {allMaterialsInTopic.map((m) => (
                 <button
                   key={m.id}
                   type="button"
                   onClick={() => onSelectMaterial && onSelectMaterial(m)}
                   className={`h-2 rounded-full transition-all cursor-pointer ${
-                    m.id === material.id ? 'w-8 bg-secondary' : 'w-2 bg-outline-variant/40 hover:bg-outline-variant'
+                    m.id === material.id ? 'w-6 sm:w-8 bg-secondary' : 'w-2 bg-outline-variant/40 hover:bg-outline-variant'
                   }`}
                   title={`Jump to: ${m.title}`}
                 />
@@ -531,7 +538,7 @@ export default function TeachPresentMode({
           type="button"
           onClick={handleNextSlide}
           disabled={isPresentation ? currentSlideIndex === totalSlides - 1 && !hasNextMaterial : !hasNextMaterial}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer border ${
+          className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer border ${
             (isPresentation ? currentSlideIndex < totalSlides - 1 || hasNextMaterial : hasNextMaterial)
               ? 'bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container hover:opacity-90 shadow-md'
               : 'opacity-40 cursor-not-allowed border-transparent text-on-surface-variant/50'
@@ -539,7 +546,7 @@ export default function TeachPresentMode({
           title="Next (Right Arrow / Space / PageDown)"
         >
           <span className="hidden sm:inline">{isPresentation && currentSlideIndex < totalSlides - 1 ? 'Next Slide' : 'Next'}</span>
-          <span className="material-symbols-outlined text-[20px]">arrow_forward_ios</span>
+          <span className="material-symbols-outlined text-[18px] sm:text-[20px]">arrow_forward_ios</span>
         </button>
       </footer>
     </div>

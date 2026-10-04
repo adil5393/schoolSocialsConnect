@@ -89,30 +89,30 @@ export default function ResourceCard({
 
   return (
     <div
-      className={`group relative bg-surface-container-low hover:bg-surface-container transition-all duration-200 rounded-xl border border-outline-variant/20 hover:border-secondary/40 shadow-sm flex flex-col justify-between ${
-        compact ? 'p-3' : 'p-4'
+      className={`group relative bg-surface-container-low hover:bg-surface-container transition-all duration-200 rounded-xl border border-outline-variant/20 hover:border-secondary/40 shadow-sm flex flex-col justify-between min-w-0 overflow-hidden ${
+        compact ? 'p-2.5 sm:p-3' : 'p-3.5 sm:p-4'
       }`}
     >
-      <div>
+      <div className="min-w-0">
         {/* Top bar: Curriculum breadcrumb if enabled */}
         {showCurriculumContext && (
-          <div className="flex items-center gap-1.5 text-xs text-on-surface-variant/80 mb-2 truncate">
-            <span className="font-semibold text-secondary">Class {material.class_name}</span>
-            <span>•</span>
-            <span className="truncate">{material.subject_name}</span>
-            <span>•</span>
-            <span className="truncate text-on-surface/90">{material.chapter_name}</span>
+          <div className="flex flex-wrap items-center gap-1 text-[11px] sm:text-xs text-on-surface-variant/80 mb-2 min-w-0">
+            <span className="font-semibold text-secondary shrink-0">Class {material.class_name}</span>
+            <span className="text-outline-variant/60">•</span>
+            <span className="truncate max-w-[100px] sm:max-w-[140px]">{material.subject_name}</span>
+            <span className="text-outline-variant/60">•</span>
+            <span className="truncate max-w-[120px] sm:max-w-[160px] text-on-surface/90">{material.chapter_name}</span>
           </div>
         )}
 
         {/* Header: Type Badge & Action Menu */}
-        <div className="flex items-center justify-between gap-2 mb-2.5">
-          <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-semibold ${config.bg} ${config.color}`}>
-            <span className="material-symbols-outlined text-[14px]">{config.icon}</span>
-            <span>{config.label}</span>
+        <div className="flex items-center justify-between gap-1.5 mb-2.5 min-w-0">
+          <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-semibold min-w-0 shrink ${config.bg} ${config.color}`}>
+            <span className="material-symbols-outlined text-[14px] shrink-0">{config.icon}</span>
+            <span className="truncate">{config.label}</span>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
             {/* Offline status badge */}
             {isSavedOffline && (
               <span className="material-symbols-outlined text-[16px] text-emerald-400" title="Saved for Offline Presentation">
@@ -303,7 +303,8 @@ export default function ResourceCard({
         {/* Title */}
         <h4
           onClick={() => onOpen && onOpen(material)}
-          className="font-headline-sm text-sm md:text-base font-bold text-on-surface hover:text-secondary line-clamp-2 cursor-pointer transition-colors leading-snug mb-1"
+          className="font-headline-sm text-sm md:text-base font-bold text-on-surface hover:text-secondary line-clamp-2 break-words cursor-pointer transition-colors leading-snug mb-1"
+          style={{ overflowWrap: 'anywhere' }}
           title={material.title}
         >
           {material.title}
@@ -311,55 +312,55 @@ export default function ResourceCard({
 
         {/* Description / Subtext if present */}
         {material.description && (
-          <p className="text-xs text-on-surface-variant/80 line-clamp-1 mb-2 font-normal">
+          <p className="text-xs text-on-surface-variant/80 line-clamp-1 mb-2 font-normal break-words">
             {material.description}
           </p>
         )}
 
         {/* Metadata Footer */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-on-surface-variant/70 mb-3">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-on-surface-variant/70 mb-3 min-w-0">
           {material.source && (
-            <span className="flex items-center gap-1 font-medium text-on-surface-variant">
-              <span className="material-symbols-outlined text-[13px]">source</span>
-              <span className="truncate max-w-[120px]">{material.source}</span>
+            <span className="flex items-center gap-1 font-medium text-on-surface-variant min-w-0">
+              <span className="material-symbols-outlined text-[13px] shrink-0">source</span>
+              <span className="truncate max-w-[100px] sm:max-w-[120px]">{material.source}</span>
             </span>
           )}
 
           {material.created_by_name && (
-            <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-[13px]">person</span>
-              <span className="truncate max-w-[100px]">{material.created_by_name}</span>
+            <span className="flex items-center gap-1 min-w-0">
+              <span className="material-symbols-outlined text-[13px] shrink-0">person</span>
+              <span className="truncate max-w-[90px] sm:max-w-[110px]">{material.created_by_name}</span>
             </span>
           )}
         </div>
       </div>
 
       {/* Action Buttons: OPEN & PRESENT */}
-      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-outline-variant/10">
+      <div className="grid grid-cols-2 gap-1.5 sm:gap-2 pt-2 border-t border-outline-variant/10">
         <button
           type="button"
           onClick={() => onOpen && onOpen(material)}
-          className={`w-full py-1.5 px-3 rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer border ${
+          className={`w-full py-1.5 px-2 sm:px-3 rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1 cursor-pointer border min-w-0 ${
             isPresentation
               ? 'bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 border-orange-500/30'
               : 'bg-surface-container-high hover:bg-surface-variant text-on-surface border-outline-variant/20'
           }`}
           title={isPresentation ? 'Open in In-App Presentation Viewer' : 'Open Resource'}
         >
-          <span className="material-symbols-outlined text-[16px]">
+          <span className="material-symbols-outlined text-[15px] sm:text-[16px] shrink-0">
             {isPresentation ? 'slideshow' : 'visibility'}
           </span>
-          <span>{isPresentation ? 'Presentation' : 'Open'}</span>
+          <span className="truncate">{isPresentation ? 'Slides' : 'Open'}</span>
         </button>
 
         <button
           type="button"
           onClick={() => onPresent && onPresent(material)}
-          className="w-full py-1.5 px-3 rounded-lg bg-gradient-to-r from-secondary-container to-secondary hover:opacity-90 text-on-secondary-container font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+          className="w-full py-1.5 px-2 sm:px-3 rounded-lg bg-gradient-to-r from-secondary-container to-secondary hover:opacity-90 text-on-secondary-container font-bold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer shadow-sm min-w-0"
           title="Launch Fullscreen Distraction-Free Classroom Presentation"
         >
-          <span className="material-symbols-outlined text-[16px]">cast_for_education</span>
-          <span>Present</span>
+          <span className="material-symbols-outlined text-[15px] sm:text-[16px] shrink-0">cast_for_education</span>
+          <span className="truncate">Present</span>
         </button>
       </div>
     </div>

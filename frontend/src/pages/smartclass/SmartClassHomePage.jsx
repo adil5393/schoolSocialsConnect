@@ -220,20 +220,20 @@ export default function SmartClassHomePage() {
                   </div>
 
                   <div className="mb-4">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-on-surface-variant mb-1">
-                      <span className="px-2 py-0.5 rounded bg-secondary/20 text-secondary font-bold">
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-on-surface-variant mb-1 min-w-0">
+                      <span className="px-2 py-0.5 rounded bg-secondary/20 text-secondary font-bold shrink-0">
                         Class {continueLesson.class_name || '10'}
                       </span>
                       <span>•</span>
-                      <span>{continueLesson.subject_name || 'Mathematics'}</span>
+                      <span className="truncate">{continueLesson.subject_name || 'Mathematics'}</span>
                     </div>
 
-                    <h3 className="font-headline-sm text-base md:text-lg font-bold text-on-surface truncate">
+                    <h3 className="font-headline-sm text-base md:text-lg font-bold text-on-surface line-clamp-2 break-words" title={continueLesson.chapter_name}>
                       {continueLesson.chapter_name || 'Pair of Linear Equations'}
                     </h3>
 
                     {continueLesson.part_title && (
-                      <p className="text-xs text-secondary-fixed-dim font-medium truncate mt-0.5">
+                      <p className="text-xs text-secondary-fixed-dim font-medium line-clamp-1 break-words mt-0.5">
                         Topic: {continueLesson.part_title}
                       </p>
                     )}
@@ -259,14 +259,14 @@ export default function SmartClassHomePage() {
           )}
 
           {/* "WHAT ARE YOU TEACHING?" QUICK LAUNCH SELECTOR */}
-          <section className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/20 shadow-md flex flex-col gap-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-outline-variant/10">
-              <div>
+          <section className="bg-surface-container-low rounded-2xl p-4 sm:p-6 border border-outline-variant/20 shadow-md flex flex-col gap-4 sm:gap-5 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-outline-variant/10 min-w-0">
+              <div className="min-w-0">
                 <h2 className="font-headline-sm text-lg md:text-xl font-bold text-on-surface flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary text-[24px]">explore</span>
+                  <span className="material-symbols-outlined text-secondary text-[24px] shrink-0">explore</span>
                   <span>What are you teaching?</span>
                 </h2>
-                <p className="text-xs md:text-sm text-on-surface-variant">
+                <p className="text-xs md:text-sm text-on-surface-variant mt-0.5">
                   Pick a Class, Subject, and Chapter to instantly surface teaching resources.
                 </p>
               </div>
@@ -279,7 +279,7 @@ export default function SmartClassHomePage() {
                       `/smart-class/curriculum/${selectedClassId}/${selectedSubjectId}/${selectedChapterId}`
                     )
                   }
-                  className="px-4 py-1.5 rounded-lg bg-surface-variant/40 hover:bg-surface-variant text-secondary text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-secondary/30"
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-surface-variant/40 hover:bg-surface-variant text-secondary text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-secondary/30 shrink-0"
                 >
                   <span>Open Full Chapter Workspace</span>
                   <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
@@ -357,16 +357,16 @@ export default function SmartClassHomePage() {
 
             {/* Quick Results Area */}
             {selectedClassId && selectedSubjectId && selectedChapterId && (
-              <div className="mt-2 pt-4 border-t border-outline-variant/10">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-sm font-bold text-on-surface">
-                    <span className="text-secondary">Class {selectedClassObj?.name}</span>
-                    <span>•</span>
-                    <span>{selectedSubjectObj?.name}</span>
-                    <span>•</span>
-                    <span className="text-on-surface font-headline-sm">{selectedChapterObj?.name}</span>
+              <div className="mt-2 pt-4 border-t border-outline-variant/10 min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-3 min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs sm:text-sm font-bold text-on-surface min-w-0">
+                    <span className="text-secondary shrink-0">Class {selectedClassObj?.name}</span>
+                    <span className="text-outline-variant/60">•</span>
+                    <span className="truncate max-w-[120px]">{selectedSubjectObj?.name}</span>
+                    <span className="text-outline-variant/60">•</span>
+                    <span className="text-on-surface font-headline-sm truncate max-w-[200px]">{selectedChapterObj?.name}</span>
                   </div>
-                  <span className="text-xs text-on-surface-variant">
+                  <span className="text-xs text-on-surface-variant shrink-0">
                     {quickMaterials.length} resource{quickMaterials.length === 1 ? '' : 's'}
                   </span>
                 </div>
@@ -387,7 +387,7 @@ export default function SmartClassHomePage() {
                     <button
                       type="button"
                       onClick={() => navigate('/smart-class/add-material')}
-                      className="mt-3 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-secondary text-on-secondary-container text-xs font-bold hover:opacity-90 cursor-pointer"
+                      className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-secondary text-on-secondary-container text-xs font-bold hover:opacity-90 cursor-pointer"
                     >
                       <span className="material-symbols-outlined text-[16px]">add</span>
                       <span>Add First Resource</span>
@@ -410,21 +410,21 @@ export default function SmartClassHomePage() {
           </section>
 
           {/* MY CLASSES OVERVIEW CARDS */}
-          <section className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div>
+          <section className="flex flex-col gap-4 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 min-w-0">
+              <div className="min-w-0">
                 <h2 className="font-headline-sm text-lg md:text-xl font-bold text-on-surface flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary">class</span>
+                  <span className="material-symbols-outlined text-secondary shrink-0">class</span>
                   <span>My Classes & Subjects</span>
                 </h2>
-                <p className="text-xs md:text-sm text-on-surface-variant">
+                <p className="text-xs md:text-sm text-on-surface-variant mt-0.5">
                   Quickly access curriculum structures for your assigned grades.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => navigate('/smart-class/classes')}
-                className="text-xs font-bold text-secondary hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-secondary hover:underline flex items-center gap-1 cursor-pointer self-start sm:self-auto shrink-0"
               >
                 <span>View All</span>
                 <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
@@ -445,29 +445,29 @@ export default function SmartClassHomePage() {
                         navigate('/smart-class/classes');
                       }
                     }}
-                    className="group bg-surface-container-low hover:bg-surface-container p-5 rounded-2xl border border-outline-variant/20 hover:border-secondary/50 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between"
+                    className="group bg-surface-container-low hover:bg-surface-container p-4 sm:p-5 rounded-2xl border border-outline-variant/20 hover:border-secondary/50 shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between min-w-0"
                   >
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-secondary/15 text-secondary border border-secondary/30">
+                    <div className="min-w-0">
+                      <div className="flex items-center justify-between mb-3 min-w-0">
+                        <span className="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-secondary/15 text-secondary border border-secondary/30 shrink-0">
                           Class {c.name}
                         </span>
-                        <span className="material-symbols-outlined text-on-surface-variant group-hover:text-secondary group-hover:translate-x-1 transition-all text-[20px]">
+                        <span className="material-symbols-outlined text-on-surface-variant group-hover:text-secondary group-hover:translate-x-1 transition-all text-[20px] shrink-0">
                           arrow_forward
                         </span>
                       </div>
-                      <h3 className="font-headline-sm text-lg font-bold text-on-surface group-hover:text-secondary transition-colors mb-2">
+                      <h3 className="font-headline-sm text-base sm:text-lg font-bold text-on-surface group-hover:text-secondary transition-colors mb-2 break-words">
                         {subjectName}
                       </h3>
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs text-on-surface-variant pt-3 border-t border-outline-variant/10">
-                      <span className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-on-surface-variant pt-3 border-t border-outline-variant/10 min-w-0">
+                      <span className="flex items-center gap-1 shrink-0">
                         <span className="material-symbols-outlined text-[16px]">menu_book</span>
                         <span>{c.chapters_count || 12} Chapters</span>
                       </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
+                      <span className="text-outline-variant/60">•</span>
+                      <span className="flex items-center gap-1 shrink-0">
                         <span className="material-symbols-outlined text-[16px]">video_library</span>
                         <span>{c.resources_count || 48} Resources</span>
                       </span>

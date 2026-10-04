@@ -73,6 +73,7 @@ export default function ChapterWorkspacePage() {
   const [showAddPart, setShowAddPart] = useState(false);
   const [newPartTitle, setNewPartTitle] = useState('');
   const [creatingPart, setCreatingPart] = useState(false);
+  const [mobileTopicPickerOpen, setMobileTopicPickerOpen] = useState(false);
 
   // Load Classes, Subjects, and Chapter Info
   useEffect(() => {
@@ -250,15 +251,117 @@ export default function ChapterWorkspacePage() {
       />
 
       {/* Main Chapter Workspace Layout: 2-Column Responsive */}
-      <div className="flex-1 flex flex-col lg:flex-row w-full overflow-hidden">
-        {/* LEFT COLUMN: CHAPTER TOPIC SELECTOR */}
-        <aside className="w-full lg:w-80 bg-surface-container-low border-b lg:border-b-0 lg:border-r border-outline-variant/15 flex flex-col shrink-0 p-4 lg:p-5 overflow-y-auto max-h-[40vh] lg:max-h-full">
+      <div className="flex-1 flex flex-col lg:flex-row w-full min-w-0 overflow-hidden">
+        {/* MOBILE TOPIC SELECTOR BAR (visible only < lg) */}
+        <div className="block lg:hidden bg-surface-container-low border-b border-outline-variant/15 p-3 sm:p-4 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="min-w-0">
+              <span className="text-[10px] font-black uppercase tracking-wider text-secondary">Chapter Workspace</span>
+              <p className="text-xs text-on-surface-variant truncate">
+                Class {currentClass?.name} • {currentSubject?.name} • {currentChapter?.name}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAddPart((v) => !v)}
+              className="text-xs font-semibold text-secondary hover:underline flex items-center gap-1 cursor-pointer shrink-0"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              <span>New Topic</span>
+            </button>
+          </div>
+
+          {/* New Topic Inline Creator on Mobile */}
+          {showAddPart && (
+            <form onSubmit={handleCreatePart} className="mb-2.5 p-3 bg-surface-container rounded-xl border border-secondary/30 space-y-2">
+              <label className="text-[11px] font-bold text-on-surface-variant block">New Topic Title</label>
+              <input
+                type="text"
+                value={newPartTitle}
+                onChange={(e) => setNewPartTitle(e.target.value)}
+                placeholder="e.g. Graphical Method..."
+                className="w-full bg-surface-dim border border-outline-variant/30 rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-secondary"
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddPart(false)}
+                  className="px-2.5 py-1 rounded text-xs text-on-surface-variant hover:text-on-surface"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingPart || !newPartTitle.trim()}
+                  className="px-3 py-1 bg-secondary text-on-secondary-container rounded text-xs font-bold disabled:opacity-50"
+                >
+                  {creatingPart ? 'Adding...' : 'Add Topic'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Mobile Topic Dropdown Trigger Button */}
+          <button
+            type="button"
+            onClick={() => setMobileTopicPickerOpen((v) => !v)}
+            className="w-full p-2.5 rounded-xl bg-surface-container border border-secondary/30 text-left flex items-center justify-between gap-2 shadow-sm cursor-pointer"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-5 h-5 rounded bg-secondary/20 text-secondary flex items-center justify-center font-bold text-xs shrink-0">
+                {sortedParts.findIndex((p) => p.id === currentPart?.id) + 1}
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-on-surface truncate">{currentPart?.title || 'Select Topic'}</p>
+                <p className="text-[10px] text-on-surface-variant">Tap to switch topic ({sortedParts.length} available)</p>
+              </div>
+            </div>
+            <span className="material-symbols-outlined text-[20px] text-secondary shrink-0">
+              {mobileTopicPickerOpen ? 'expand_less' : 'expand_more'}
+            </span>
+          </button>
+
+          {/* Mobile Topic Dropdown Drawer */}
+          {mobileTopicPickerOpen && (
+            <div className="mt-2 p-2 bg-surface-container-high rounded-xl border border-outline-variant/20 shadow-xl max-h-56 overflow-y-auto space-y-1 animate-in fade-in">
+              {sortedParts.map((part, idx) => {
+                const isActive = String(part.id) === String(currentPart?.id);
+                const partMatCount = chapterMaterials.filter((m) => String(m.part_id) === String(part.id)).length;
+                return (
+                  <button
+                    key={part.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedPartId(String(part.id));
+                      setActiveCategory('all');
+                      setMobileTopicPickerOpen(false);
+                    }}
+                    className={`w-full text-left p-2 rounded-lg flex items-center justify-between gap-2 text-xs cursor-pointer ${
+                      isActive ? 'bg-secondary/15 text-secondary font-bold' : 'text-on-surface hover:bg-surface-variant/40'
+                    }`}
+                  >
+                    <span className="truncate">
+                      {idx + 1}. {part.title}
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-dim shrink-0">
+                      {partMatCount}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* LEFT COLUMN: CHAPTER TOPIC SELECTOR (DESKTOP ONLY lg+) */}
+        <aside className="hidden lg:flex w-80 bg-surface-container-low border-r border-outline-variant/15 flex-col shrink-0 p-5 overflow-y-auto max-h-full">
           {/* Chapter Info Header */}
-          <div className="pb-4 border-b border-outline-variant/10 mb-4">
+          <div className="pb-4 border-b border-outline-variant/10 mb-4 min-w-0">
             <span className="text-[11px] font-black uppercase tracking-wider text-secondary px-2.5 py-0.5 rounded bg-secondary/10 border border-secondary/20">
               Chapter Workspace
             </span>
-            <h2 className="font-headline-sm text-base md:text-lg font-bold text-on-surface mt-2 leading-snug">
+            <h2 className="font-headline-sm text-lg font-bold text-on-surface mt-2 leading-snug break-words">
               {currentChapter?.name}
             </h2>
             <p className="text-xs text-on-surface-variant mt-0.5">
@@ -313,7 +416,7 @@ export default function ChapterWorkspacePage() {
           )}
 
           {/* Topics List Navigation */}
-          <div className="flex-1 space-y-1.5 pr-1">
+          <div className="flex-1 space-y-1.5 pr-1 overflow-y-auto">
             {sortedParts.length === 0 ? (
               <p className="text-xs text-on-surface-variant/70 italic p-3 text-center">
                 No topics yet. Click "New Topic" above to start.
@@ -375,8 +478,8 @@ export default function ChapterWorkspacePage() {
         </aside>
 
         {/* RIGHT COLUMN: TOPIC LEARNING HUB */}
-        <main className="flex-1 flex flex-col h-full overflow-y-auto pb-32 md:pb-24">
-          <div className="p-4 md:p-8 max-w-6xl w-full mx-auto flex flex-col gap-6">
+        <main className="flex-1 flex flex-col h-full overflow-y-auto pb-32 md:pb-24 min-w-0">
+          <div className="p-3 sm:p-5 md:p-8 max-w-6xl w-full mx-auto flex flex-col gap-5 sm:gap-6 min-w-0">
             {error && (
               <div className="bg-error-container/10 border border-error/30 text-error rounded-xl p-4 text-sm font-medium">
                 {error}
@@ -386,15 +489,15 @@ export default function ChapterWorkspacePage() {
             {currentPart ? (
               <>
                 {/* Topic Banner: ONE TOPIC — MULTIPLE WAYS TO LEARN IT */}
-                <div className="bg-gradient-to-r from-surface-container-high to-surface-container-low p-6 rounded-2xl border border-outline-variant/20 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
+                <div className="bg-gradient-to-r from-surface-container-high to-surface-container-low p-4 sm:p-6 rounded-2xl border border-outline-variant/20 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-secondary mb-1">
                       <span>Topic {sortedParts.findIndex((p) => p.id === currentPart.id) + 1}</span>
                       <span>•</span>
                       <span>Topic Learning Hub</span>
                     </div>
 
-                    <h1 className="font-headline-lg text-2xl md:text-3xl font-bold text-on-surface">
+                    <h1 className="font-headline-lg text-xl sm:text-2xl md:text-3xl font-bold text-on-surface break-words">
                       {currentPart.title}
                     </h1>
 
@@ -408,7 +511,7 @@ export default function ChapterWorkspacePage() {
                     <button
                       type="button"
                       onClick={() => handlePresent(topicMaterials[0])}
-                      className="px-5 py-3 rounded-xl bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container font-bold text-sm hover:opacity-95 shadow-lg flex items-center gap-2 shrink-0 cursor-pointer transition-transform hover:scale-105"
+                      className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container font-bold text-sm hover:opacity-95 shadow-lg flex items-center justify-center gap-2 shrink-0 cursor-pointer transition-transform hover:scale-105"
                       title="Launch Fullscreen Classroom Mode for this Topic"
                     >
                       <span className="material-symbols-outlined text-[20px]">cast_for_education</span>
@@ -418,7 +521,7 @@ export default function ChapterWorkspacePage() {
                 </div>
 
                 {/* 4 LEARNING CATEGORIES TABS */}
-                <div className="flex flex-wrap items-center gap-2 border-b border-outline-variant/15 pb-2">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-outline-variant/15 pb-2 min-w-0">
                   {CATEGORIES.map((cat) => {
                     const isActive = activeCategory === cat.key;
                     const count =
@@ -431,14 +534,14 @@ export default function ChapterWorkspacePage() {
                         key={cat.key}
                         type="button"
                         onClick={() => setActiveCategory(cat.key)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer border ${
+                        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer border shrink-0 ${
                           isActive
                             ? 'bg-secondary/15 border-secondary text-secondary shadow-sm'
                             : 'bg-surface-container-low border-outline-variant/20 hover:bg-surface-variant/40 text-on-surface-variant hover:text-on-surface'
                         }`}
                       >
                         <span
-                          className="material-symbols-outlined text-[18px]"
+                          className="material-symbols-outlined text-[16px] sm:text-[18px]"
                           style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
                         >
                           {cat.icon}
@@ -476,24 +579,24 @@ export default function ChapterWorkspacePage() {
                     <button
                       type="button"
                       onClick={() => navigate('/smart-class/add-material')}
-                      className="px-5 py-2.5 bg-secondary text-on-secondary-container rounded-xl text-xs font-bold hover:opacity-90 cursor-pointer flex items-center gap-2"
+                      className="px-5 py-2.5 bg-secondary text-on-secondary-container rounded-xl text-xs font-bold hover:opacity-90 cursor-pointer flex items-center justify-center gap-2 max-w-full text-center"
                     >
-                      <span className="material-symbols-outlined text-[18px]">add_circle</span>
-                      <span>Add Resource to "{currentPart.title}"</span>
+                      <span className="material-symbols-outlined text-[18px] shrink-0">add_circle</span>
+                      <span className="truncate max-w-[260px]">Add Resource to "{currentPart.title}"</span>
                     </button>
                   </div>
                 ) : activeCategory === 'all' ? (
                   /* ALL VIEW: Show structured categorized sections */
-                  <div className="flex flex-col gap-8">
+                  <div className="flex flex-col gap-6 sm:gap-8">
                     {/* 1. LEARN SECTION */}
                     {categorizedMaterials.learn.length > 0 && (
                       <section>
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-headline-sm text-lg font-bold text-on-surface flex items-center gap-2">
-                            <span className="material-symbols-outlined text-teal-400">school</span>
-                            <span>Learn — Explanations & Concepts</span>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3">
+                          <h3 className="font-headline-sm text-base sm:text-lg font-bold text-on-surface flex items-center gap-2 min-w-0">
+                            <span className="material-symbols-outlined text-teal-400 shrink-0">school</span>
+                            <span className="truncate">Learn — Explanations & Concepts</span>
                           </h3>
-                          <span className="text-xs text-on-surface-variant font-medium">
+                          <span className="text-xs text-on-surface-variant font-medium shrink-0">
                             {categorizedMaterials.learn.length} resource{categorizedMaterials.learn.length === 1 ? '' : 's'}
                           </span>
                         </div>
@@ -513,12 +616,12 @@ export default function ChapterWorkspacePage() {
                     {/* 2. UNDERSTAND SECTION */}
                     {categorizedMaterials.understand.length > 0 && (
                       <section>
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-headline-sm text-lg font-bold text-on-surface flex items-center gap-2">
-                            <span className="material-symbols-outlined text-amber-400">lightbulb</span>
-                            <span>Understand — Worked Examples & Visuals</span>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3">
+                          <h3 className="font-headline-sm text-base sm:text-lg font-bold text-on-surface flex items-center gap-2 min-w-0">
+                            <span className="material-symbols-outlined text-amber-400 shrink-0">lightbulb</span>
+                            <span className="truncate">Understand — Worked Examples & Visuals</span>
                           </h3>
-                          <span className="text-xs text-on-surface-variant font-medium">
+                          <span className="text-xs text-on-surface-variant font-medium shrink-0">
                             {categorizedMaterials.understand.length} resource{categorizedMaterials.understand.length === 1 ? '' : 's'}
                           </span>
                         </div>
@@ -538,12 +641,12 @@ export default function ChapterWorkspacePage() {
                     {/* 3. PRACTICE SECTION */}
                     {categorizedMaterials.practice.length > 0 && (
                       <section>
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-headline-sm text-lg font-bold text-on-surface flex items-center gap-2">
-                            <span className="material-symbols-outlined text-yellow-400">assignment</span>
-                            <span>Practice — NCERT, Worksheets & Questions</span>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3">
+                          <h3 className="font-headline-sm text-base sm:text-lg font-bold text-on-surface flex items-center gap-2 min-w-0">
+                            <span className="material-symbols-outlined text-yellow-400 shrink-0">assignment</span>
+                            <span className="truncate">Practice — NCERT, Worksheets & Questions</span>
                           </h3>
-                          <span className="text-xs text-on-surface-variant font-medium">
+                          <span className="text-xs text-on-surface-variant font-medium shrink-0">
                             {categorizedMaterials.practice.length} resource{categorizedMaterials.practice.length === 1 ? '' : 's'}
                           </span>
                         </div>
@@ -563,12 +666,12 @@ export default function ChapterWorkspacePage() {
                     {/* 4. REFERENCE SECTION */}
                     {categorizedMaterials.reference.length > 0 && (
                       <section>
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-headline-sm text-lg font-bold text-on-surface flex items-center gap-2">
-                            <span className="material-symbols-outlined text-blue-400">menu_book</span>
-                            <span>Reference — Notes, Diagrams & External Links</span>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3">
+                          <h3 className="font-headline-sm text-base sm:text-lg font-bold text-on-surface flex items-center gap-2 min-w-0">
+                            <span className="material-symbols-outlined text-blue-400 shrink-0">menu_book</span>
+                            <span className="truncate">Reference — Notes, Diagrams & External Links</span>
                           </h3>
-                          <span className="text-xs text-on-surface-variant font-medium">
+                          <span className="text-xs text-on-surface-variant font-medium shrink-0">
                             {categorizedMaterials.reference.length} resource{categorizedMaterials.reference.length === 1 ? '' : 's'}
                           </span>
                         </div>

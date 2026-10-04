@@ -76,18 +76,18 @@ export default function MyClassesPage() {
       <main className="flex-1 w-full overflow-y-auto pb-32 md:pb-24">
         <div className="max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-md md:py-lg flex flex-col gap-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
+            <div className="min-w-0">
               <h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-bold text-on-surface">
                 My Classes & Curricula
               </h1>
-              <p className="text-sm text-on-surface-variant mt-1">
+              <p className="text-xs sm:text-sm text-on-surface-variant mt-0.5">
                 Select your assigned grade and subject to explore structured chapters and topics.
               </p>
             </div>
 
             {/* Filter by Grade */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
               <label className="text-xs font-semibold text-on-surface-variant">Filter:</label>
               <select
                 value={selectedClassFilter}
@@ -116,45 +116,45 @@ export default function MyClassesPage() {
               <span>Loading assigned classes...</span>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               {classCards.map((card, idx) => (
                 <div
                   key={`${card.class_id}-${card.subject_id}-${idx}`}
                   onClick={() => navigate(`/smart-class/curriculum/${card.class_id}/${card.subject_id}`)}
-                  className={`group bg-surface-container-low hover:bg-surface-container p-6 rounded-2xl border border-outline-variant/20 ${card.theme.border} shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between`}
+                  className={`group bg-surface-container-low hover:bg-surface-container p-4 sm:p-6 rounded-2xl border border-outline-variant/20 ${card.theme.border} shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between min-w-0`}
                 >
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-xl bg-surface-dim text-on-surface border border-outline-variant/30">
+                  <div className="min-w-0">
+                    <div className="flex items-center justify-between mb-3 min-w-0">
+                      <span className="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-xl bg-surface-dim text-on-surface border border-outline-variant/30 shrink-0">
                         CLASS {card.class_name}
                       </span>
-                      <div className={`p-2 rounded-xl border ${card.theme.badge}`}>
-                        <span className="material-symbols-outlined text-[20px] block">{card.theme.icon}</span>
+                      <div className={`p-2 rounded-xl border shrink-0 ${card.theme.badge}`}>
+                        <span className="material-symbols-outlined text-[18px] sm:text-[20px] block">{card.theme.icon}</span>
                       </div>
                     </div>
 
-                    <h2 className="font-headline-sm text-xl font-bold text-on-surface group-hover:text-secondary transition-colors mb-1">
+                    <h2 className="font-headline-sm text-lg sm:text-xl font-bold text-on-surface group-hover:text-secondary transition-colors mb-1 break-words">
                       {card.subject_name}
                     </h2>
-                    <p className="text-xs text-on-surface-variant mb-6">
+                    <p className="text-xs text-on-surface-variant mb-4 sm:mb-6">
                       Standardized NCERT / Institutional Curriculum
                     </p>
                   </div>
 
-                  <div className="pt-4 border-t border-outline-variant/10 flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-xs text-on-surface-variant font-medium">
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[16px]">menu_book</span>
+                  <div className="pt-3.5 border-t border-outline-variant/10 flex items-center justify-between gap-2 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-on-surface-variant font-medium min-w-0">
+                      <span className="flex items-center gap-1 shrink-0">
+                        <span className="material-symbols-outlined text-[15px] sm:text-[16px]">menu_book</span>
                         <span>{card.chapters_count} Chapters</span>
                       </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[16px]">video_library</span>
+                      <span className="text-outline-variant/60">•</span>
+                      <span className="flex items-center gap-1 shrink-0">
+                        <span className="material-symbols-outlined text-[15px] sm:text-[16px]">video_library</span>
                         <span>{card.resources_count} Resources</span>
                       </span>
                     </div>
 
-                    <span className="material-symbols-outlined text-secondary text-[20px] group-hover:translate-x-1 transition-transform">
+                    <span className="material-symbols-outlined text-secondary text-[20px] group-hover:translate-x-1 transition-transform shrink-0">
                       arrow_forward
                     </span>
                   </div>

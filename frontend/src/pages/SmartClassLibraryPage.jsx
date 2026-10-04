@@ -120,9 +120,9 @@ export default function SmartClassLibraryPage() {
       key={material.id}
       type="button"
       onClick={() => handleOpenMaterial(material)}
-      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-surface-variant/40 transition-colors text-left cursor-pointer"
+      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-surface-variant/40 transition-colors text-left cursor-pointer min-w-0"
     >
-      <div className="w-24 h-14 rounded-md overflow-hidden bg-surface-dim border border-outline-variant/20 shrink-0 flex items-center justify-center">
+      <div className="w-20 sm:w-24 h-14 rounded-md overflow-hidden bg-surface-dim border border-outline-variant/20 shrink-0 flex items-center justify-center">
         {material.thumbnail_url || (material.media_type === 'image' && material.file_url) ? (
           <img src={material.thumbnail_url || material.file_url} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -132,12 +132,12 @@ export default function SmartClassLibraryPage() {
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-body-sm text-body-sm text-on-surface truncate">{material.title}</p>
+        <p className="font-body-sm text-body-sm text-on-surface line-clamp-2 break-words">{material.title}</p>
         {material.duration_seconds != null && (
           <p className="font-label-md text-label-md text-on-surface-variant">{formatDuration(material.duration_seconds)}</p>
         )}
       </div>
-      <span className="material-symbols-outlined text-primary">
+      <span className="material-symbols-outlined text-primary shrink-0">
         {material.media_type === 'video' ? 'play_arrow' : material.media_type === 'image' ? 'visibility' : 'open_in_new'}
       </span>
     </button>
@@ -148,8 +148,8 @@ export default function SmartClassLibraryPage() {
       <SmartClassTopBar onToggleMobileMenu={() => setMobileMenuOpen && setMobileMenuOpen(true)} />
 
       <main className="flex-1 w-full overflow-y-auto pb-32 md:pb-24">
-        <div className="max-w-5xl mx-auto px-margin-mobile md:px-margin-desktop py-md md:py-lg flex flex-col gap-lg">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="max-w-5xl mx-auto px-margin-mobile md:px-margin-desktop py-md md:py-lg flex flex-col gap-lg min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-bold text-on-surface tracking-tight">
                 Smart Class Library
@@ -159,41 +159,43 @@ export default function SmartClassLibraryPage() {
             <button
               type="button"
               onClick={() => navigate('/smart-class/add-video')}
-              className="btn-gradient text-white font-label-md text-label-md px-6 py-3 rounded-lg font-semibold flex items-center gap-2 cursor-pointer shrink-0"
+              className="btn-gradient text-white font-label-md text-label-md px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 cursor-pointer shrink-0 self-start sm:self-auto"
             >
               <span className="material-symbols-outlined text-[18px]">add</span> Add Video
             </button>
           </div>
 
           {error && (
-            <div className="bg-error-container/10 border border-error/30 text-error rounded-lg px-4 py-3 font-body-sm text-body-sm">
+            <div className="bg-error-container/10 border border-error/30 text-error rounded-lg px-4 py-3 font-body-sm text-body-sm break-words">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSearch} className="flex gap-3">
+          <form onSubmit={handleSearch} className="flex flex-col xs:flex-row gap-2.5 sm:gap-3 min-w-0">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by title..."
-              className="flex-1 bg-surface-container-low border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              className="flex-1 bg-surface-container-low border border-outline-variant/30 rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary min-w-0"
             />
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-surface-container-high border border-outline-variant/30 rounded-lg font-label-md text-label-md text-on-surface hover:bg-surface-variant transition-colors cursor-pointer"
-            >
-              {searching ? 'Searching…' : 'Search'}
-            </button>
-            {searchResults && (
+            <div className="flex items-center gap-2">
               <button
-                type="button"
-                onClick={clearSearch}
-                className="px-4 py-2.5 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
+                type="submit"
+                className="flex-1 xs:flex-none px-5 py-2.5 bg-surface-container-high border border-outline-variant/30 rounded-lg font-label-md text-label-md text-on-surface hover:bg-surface-variant transition-colors cursor-pointer text-center"
               >
-                Clear
+                {searching ? 'Searching…' : 'Search'}
               </button>
-            )}
+              {searchResults && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  className="px-4 py-2.5 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </form>
 
           {searchResults ? (

@@ -123,7 +123,7 @@ export default function UserManagementPanel({ apiFetch, ApiError }) {
               <option value="admin">Admin</option>
             </select>
           </div>
-          <div className="sm:col-span-2 flex gap-6">
+          <div className="sm:col-span-2 flex flex-col sm:flex-row gap-3 sm:gap-6">
             <label className="flex items-center gap-2 font-body-sm text-body-sm text-on-surface cursor-pointer">
               <input
                 type="checkbox"
@@ -163,85 +163,163 @@ export default function UserManagementPanel({ apiFetch, ApiError }) {
       {loading ? (
         <p className="font-body-sm text-body-sm text-on-surface-variant">Loading…</p>
       ) : (
-        <div className="bg-surface-container-low rounded-xl card-border overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-outline-variant/10 font-label-md text-label-md text-on-surface-variant">
-                <th className="p-3">User</th>
-                <th className="p-3">Role</th>
-                <th className="p-3 text-center">Social</th>
-                <th className="p-3 text-center">Smart Class</th>
-                <th className="p-3 text-center">Active</th>
-                <th className="p-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className="border-b border-outline-variant/10 last:border-0">
-                  <td className="p-3">
-                    <p className="font-body-sm text-body-sm text-on-surface font-semibold">{u.full_name}</p>
-                    <p className="font-label-md text-label-md text-on-surface-variant">{u.email}</p>
-                  </td>
-                  <td className="p-3">
+        <>
+          {/* Mobile Card List (hidden on md+) */}
+          <div className="block md:hidden space-y-3">
+            {users.map((u) => (
+              <div key={u.id} className="bg-surface-container-low rounded-xl p-4 card-border space-y-3 min-w-0">
+                <div className="flex items-start justify-between gap-2 min-w-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-body-sm text-body-sm text-on-surface font-semibold truncate">{u.full_name}</p>
+                    <p className="font-label-md text-label-md text-on-surface-variant break-all">{u.email}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => patchUser(u.id, { is_active: !u.is_active })}
+                    className={`px-2 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 cursor-pointer shrink-0 ${
+                      u.is_active ? 'bg-secondary/20 text-secondary' : 'bg-error/20 text-error'
+                    }`}
+                    title="Toggle active status"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">{u.is_active ? 'check' : 'close'}</span>
+                    <span>{u.is_active ? 'Active' : 'Inactive'}</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 pt-2 border-t border-outline-variant/10">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-on-surface-variant font-medium">Role:</label>
                     <select
                       value={u.role}
                       onChange={(e) => patchUser(u.id, { role: e.target.value })}
-                      className="bg-surface-dim border border-outline-variant/30 rounded-md px-2 py-1 text-on-surface text-sm"
+                      className="bg-surface-dim border border-outline-variant/30 rounded-md px-2 py-1 text-on-surface text-xs"
                     >
                       <option value="editor">Editor</option>
                       <option value="admin">Admin</option>
                     </select>
-                  </td>
-                  <td className="p-3 text-center">
-                    <button
-                      type="button"
-                      onClick={() => patchUser(u.id, { has_social_access: !u.has_social_access })}
-                      className={`w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer ${
-                        u.has_social_access ? 'bg-secondary/20 text-secondary' : 'bg-surface-variant text-on-surface-variant'
-                      }`}
-                      title="Toggle Social Media Manager access"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">{u.has_social_access ? 'check' : 'close'}</span>
-                    </button>
-                  </td>
-                  <td className="p-3 text-center">
-                    <button
-                      type="button"
-                      onClick={() => patchUser(u.id, { has_smart_class_access: !u.has_smart_class_access })}
-                      className={`w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer ${
-                        u.has_smart_class_access ? 'bg-secondary/20 text-secondary' : 'bg-surface-variant text-on-surface-variant'
-                      }`}
-                      title="Toggle Smart Class Library access"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">{u.has_smart_class_access ? 'check' : 'close'}</span>
-                    </button>
-                  </td>
-                  <td className="p-3 text-center">
-                    <button
-                      type="button"
-                      onClick={() => patchUser(u.id, { is_active: !u.is_active })}
-                      className={`w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer ${
-                        u.is_active ? 'bg-secondary/20 text-secondary' : 'bg-error/20 text-error'
-                      }`}
-                      title="Toggle active"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">{u.is_active ? 'check' : 'close'}</span>
-                    </button>
-                  </td>
-                  <td className="p-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleResetPassword(u.id)}
-                      className="font-label-md text-label-md text-primary hover:underline cursor-pointer whitespace-nowrap"
-                    >
-                      Reset password
-                    </button>
-                  </td>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleResetPassword(u.id)}
+                    className="font-label-md text-xs text-primary hover:underline cursor-pointer"
+                  >
+                    Reset Password
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-outline-variant/10">
+                  <button
+                    type="button"
+                    onClick={() => patchUser(u.id, { has_social_access: !u.has_social_access })}
+                    className={`p-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer border ${
+                      u.has_social_access
+                        ? 'bg-secondary/15 border-secondary/30 text-secondary'
+                        : 'bg-surface-dim border-outline-variant/20 text-on-surface-variant'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">{u.has_social_access ? 'check_circle' : 'cancel'}</span>
+                    <span>Social Media</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => patchUser(u.id, { has_smart_class_access: !u.has_smart_class_access })}
+                    className={`p-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer border ${
+                      u.has_smart_class_access
+                        ? 'bg-secondary/15 border-secondary/30 text-secondary'
+                        : 'bg-surface-dim border-outline-variant/20 text-on-surface-variant'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">{u.has_smart_class_access ? 'check_circle' : 'cancel'}</span>
+                    <span>Smart Class</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table (hidden on mobile, visible md+) */}
+          <div className="hidden md:block bg-surface-container-low rounded-xl card-border overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-outline-variant/10 font-label-md text-label-md text-on-surface-variant">
+                  <th className="p-3">User</th>
+                  <th className="p-3">Role</th>
+                  <th className="p-3 text-center">Social</th>
+                  <th className="p-3 text-center">Smart Class</th>
+                  <th className="p-3 text-center">Active</th>
+                  <th className="p-3"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.id} className="border-b border-outline-variant/10 last:border-0">
+                    <td className="p-3">
+                      <p className="font-body-sm text-body-sm text-on-surface font-semibold">{u.full_name}</p>
+                      <p className="font-label-md text-label-md text-on-surface-variant">{u.email}</p>
+                    </td>
+                    <td className="p-3">
+                      <select
+                        value={u.role}
+                        onChange={(e) => patchUser(u.id, { role: e.target.value })}
+                        className="bg-surface-dim border border-outline-variant/30 rounded-md px-2 py-1 text-on-surface text-sm"
+                      >
+                        <option value="editor">Editor</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </td>
+                    <td className="p-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => patchUser(u.id, { has_social_access: !u.has_social_access })}
+                        className={`w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer ${
+                          u.has_social_access ? 'bg-secondary/20 text-secondary' : 'bg-surface-variant text-on-surface-variant'
+                        }`}
+                        title="Toggle Social Media Manager access"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">{u.has_social_access ? 'check' : 'close'}</span>
+                      </button>
+                    </td>
+                    <td className="p-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => patchUser(u.id, { has_smart_class_access: !u.has_smart_class_access })}
+                        className={`w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer ${
+                          u.has_smart_class_access ? 'bg-secondary/20 text-secondary' : 'bg-surface-variant text-on-surface-variant'
+                        }`}
+                        title="Toggle Smart Class Library access"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">{u.has_smart_class_access ? 'check' : 'close'}</span>
+                      </button>
+                    </td>
+                    <td className="p-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => patchUser(u.id, { is_active: !u.is_active })}
+                        className={`w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer ${
+                          u.is_active ? 'bg-secondary/20 text-secondary' : 'bg-error/20 text-error'
+                        }`}
+                        title="Toggle active"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">{u.is_active ? 'check' : 'close'}</span>
+                      </button>
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleResetPassword(u.id)}
+                        className="font-label-md text-label-md text-primary hover:underline cursor-pointer whitespace-nowrap"
+                      >
+                        Reset password
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );

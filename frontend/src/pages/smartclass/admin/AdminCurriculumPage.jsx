@@ -266,8 +266,8 @@ export default function AdminCurriculumPage() {
           </section>
 
           {/* Chapters Structure List */}
-          <section className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/20 shadow-sm flex flex-col gap-4">
-            <div className="flex items-center justify-between pb-3 border-b border-outline-variant/10">
+          <section className="bg-surface-container-low p-4 sm:p-6 rounded-2xl border border-outline-variant/20 shadow-sm flex flex-col gap-4 min-w-0">
+            <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3 pb-3 border-b border-outline-variant/10">
               <h2 className="font-headline-sm text-base md:text-lg font-bold text-on-surface flex items-center gap-2">
                 <span className="material-symbols-outlined text-secondary text-[22px]">format_list_numbered</span>
                 <span>Curriculum Chapters ({chapters.length})</span>
@@ -276,7 +276,7 @@ export default function AdminCurriculumPage() {
               <button
                 type="button"
                 onClick={() => setShowAddChapter((v) => !v)}
-                className="px-4 py-2 bg-secondary text-on-secondary-container rounded-xl text-xs font-bold flex items-center gap-1.5 hover:opacity-90 shadow-sm cursor-pointer"
+                className="px-4 py-2 bg-secondary text-on-secondary-container rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 shadow-sm cursor-pointer self-start xs:self-auto"
               >
                 <span className="material-symbols-outlined text-[16px]">add</span>
                 <span>Add Chapter</span>
@@ -284,27 +284,27 @@ export default function AdminCurriculumPage() {
             </div>
 
             {showAddChapter && (
-              <form onSubmit={handleAddChapter} className="p-4 bg-surface-container rounded-2xl border border-secondary/30 space-y-3">
+              <form onSubmit={handleAddChapter} className="p-4 bg-surface-container rounded-2xl border border-secondary/30 space-y-3 min-w-0">
                 <label className="text-xs font-bold text-on-surface-variant block">New Chapter Title</label>
                 <input
                   type="text"
                   value={newChapterName}
                   onChange={(e) => setNewChapterName(e.target.value)}
                   placeholder="e.g. Real Numbers / Pair of Linear Equations..."
-                  className="w-full bg-surface-dim border border-outline-variant/30 rounded-xl px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-secondary"
+                  className="w-full bg-surface-dim border border-outline-variant/30 rounded-xl px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-secondary min-w-0"
                   autoFocus
                 />
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setShowAddChapter(false)}
-                    className="px-3 py-1.5 rounded-lg text-xs text-on-surface-variant hover:text-on-surface"
+                    className="px-3 py-1.5 rounded-lg text-xs text-on-surface-variant hover:text-on-surface cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 bg-secondary text-on-secondary-container rounded-lg text-xs font-bold"
+                    className="px-4 py-1.5 bg-secondary text-on-secondary-container rounded-lg text-xs font-bold cursor-pointer"
                   >
                     Create Chapter
                   </button>
@@ -322,31 +322,31 @@ export default function AdminCurriculumPage() {
                 No chapters found for this Class and Subject. Click "Add Chapter" above.
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 min-w-0">
                 {chapters.map((chap, idx) => (
                   <div
                     key={chap.id}
-                    className="p-4 bg-surface-container rounded-xl border border-outline-variant/10 flex items-center justify-between gap-4"
+                    className="p-3.5 sm:p-4 bg-surface-container rounded-xl border border-outline-variant/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="w-7 h-7 rounded-lg bg-surface-dim flex items-center justify-center font-black text-xs text-secondary border border-outline-variant/20">
+                    <div className="flex items-start sm:items-center gap-3 min-w-0">
+                      <span className="w-7 h-7 rounded-lg bg-surface-dim flex items-center justify-center font-black text-xs text-secondary border border-outline-variant/20 shrink-0 mt-0.5 sm:mt-0">
                         {String(idx + 1).padStart(2, '0')}
                       </span>
-                      <div>
-                        <h3 className="text-sm font-bold text-on-surface">{chap.name}</h3>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-sm font-bold text-on-surface break-words">{chap.name}</h3>
                         <p className="text-xs text-on-surface-variant">
                           {chap.parts?.length || 0} Topics • {chap.resources_count || 0} Resources
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                       <button
                         type="button"
                         onClick={() =>
                           navigate(`/smart-class/curriculum/${selectedClassId}/${selectedSubjectId}/${chap.id}`)
                         }
-                        className="px-3 py-1.5 rounded-lg bg-surface-variant/40 hover:bg-surface-variant text-secondary text-xs font-bold transition-colors"
+                        className="px-3 py-1.5 rounded-lg bg-surface-variant/40 hover:bg-surface-variant text-secondary text-xs font-bold transition-colors cursor-pointer"
                       >
                         Open Workspace
                       </button>
@@ -354,7 +354,7 @@ export default function AdminCurriculumPage() {
                       <button
                         type="button"
                         onClick={() => handleDeleteChapter(chap.id, chap.name)}
-                        className="p-1.5 rounded-lg text-error hover:bg-error-container/20 transition-colors"
+                        className="p-1.5 rounded-lg text-error hover:bg-error-container/20 transition-colors cursor-pointer"
                         title="Delete Chapter"
                       >
                         <span className="material-symbols-outlined text-[18px]">delete</span>

@@ -181,7 +181,7 @@ export default function ManageMaterialPage() {
               </h3>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 min-w-0">
               {filteredMaterials.map((mat) => (
                 <ResourceCard
                   key={mat.id}
@@ -201,8 +201,8 @@ export default function ManageMaterialPage() {
 
       {/* Edit Modal */}
       {editingMaterial && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-surface-container rounded-2xl p-6 border border-outline-variant/30 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="max-w-md w-full bg-surface-container rounded-2xl p-4 sm:p-6 border border-outline-variant/30 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto min-w-0">
             <div className="flex items-center justify-between pb-2 border-b border-outline-variant/10">
               <h3 className="font-headline-sm text-base font-bold text-on-surface">Edit Material</h3>
               <button
@@ -214,14 +214,14 @@ export default function ManageMaterialPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveEdit} className="space-y-3">
+            <form onSubmit={handleSaveEdit} className="space-y-3 min-w-0">
               <div>
                 <label className="text-xs font-bold text-on-surface-variant block mb-1">Title</label>
                 <input
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full bg-surface-dim border border-outline-variant/30 rounded-xl px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-secondary"
+                  className="w-full bg-surface-dim border border-outline-variant/30 rounded-xl px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-secondary min-w-0"
                   required
                 />
               </div>
@@ -240,18 +240,18 @@ export default function ManageMaterialPage() {
                 </select>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex flex-col-reverse xs:flex-row justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setEditingMaterial(null)}
-                  className="px-4 py-2 rounded-xl text-xs text-on-surface-variant hover:text-on-surface cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs text-on-surface-variant hover:text-on-surface cursor-pointer text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingEdit || !editTitle.trim()}
-                  className="px-5 py-2 bg-secondary text-on-secondary-container rounded-xl text-xs font-bold hover:opacity-90 shadow-md cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 bg-secondary text-on-secondary-container rounded-xl text-xs font-bold hover:opacity-90 shadow-md cursor-pointer disabled:opacity-50 text-center"
                 >
                   {savingEdit ? 'Saving...' : 'Save Changes'}
                 </button>

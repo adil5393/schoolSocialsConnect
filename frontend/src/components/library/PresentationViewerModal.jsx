@@ -269,26 +269,27 @@ export default function PresentationViewerModal({
 
       {/* Top Navigation Bar (Hidden in clean Present Mode or minimized) */}
       {!isPresentMode ? (
-        <header className="h-14 px-4 bg-surface-container-lowest/95 backdrop-blur-md border-b border-outline-variant/15 flex items-center justify-between shrink-0 z-20">
+        <header className="h-14 px-2.5 sm:px-4 bg-surface-container-lowest/95 backdrop-blur-md border-b border-outline-variant/15 flex items-center justify-between shrink-0 z-20 min-w-0">
           {/* Left: Back & Breadcrumbs */}
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <button
               type="button"
               onClick={onClose}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-variant/40 hover:bg-surface-variant text-on-surface font-semibold text-xs transition-colors cursor-pointer border border-outline-variant/20 shrink-0"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-variant/40 hover:bg-surface-variant text-on-surface font-semibold text-xs transition-colors cursor-pointer border border-outline-variant/20 shrink-0"
               title="Return to Chapter Workspace (Esc)"
             >
               <span className="material-symbols-outlined text-[18px]">arrow_back</span>
               <span className="hidden sm:inline">Back to Topic</span>
+              <span className="sm:hidden">Back</span>
             </button>
 
-            <div className="flex items-center gap-1.5 text-xs text-on-surface-variant truncate">
-              <span className="font-bold text-secondary">Class {localMaterial.class_name}</span>
-              <span>•</span>
-              <span className="truncate">{localMaterial.subject_name}</span>
-              <span>•</span>
-              <span className="truncate text-on-surface font-medium">{localMaterial.chapter_name}</span>
-              <span>•</span>
+            <div className="flex items-center gap-1.5 text-xs text-on-surface-variant min-w-0 truncate">
+              <span className="font-bold text-secondary shrink-0">Class {localMaterial.class_name}</span>
+              <span className="text-outline-variant/60">•</span>
+              <span className="truncate max-w-[80px] sm:max-w-[120px]">{localMaterial.subject_name}</span>
+              <span className="text-outline-variant/60 hidden xs:inline">•</span>
+              <span className="truncate max-w-[100px] sm:max-w-[160px] text-on-surface font-medium hidden xs:inline">{localMaterial.chapter_name}</span>
+              <span className="text-outline-variant/60 hidden md:inline">•</span>
               <span className="truncate text-secondary hidden md:inline">{localMaterial.part_title}</span>
             </div>
           </div>
@@ -302,7 +303,7 @@ export default function PresentationViewerModal({
           </div>
 
           {/* Right: Presentation Tools & Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Download Original PPT */}
             {downloadUrl && (
               <a
@@ -310,7 +311,7 @@ export default function PresentationViewerModal({
                 download
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-variant/30 hover:bg-surface-variant text-on-surface text-xs font-semibold transition-colors cursor-pointer border border-outline-variant/20"
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-variant/30 hover:bg-surface-variant text-on-surface text-xs font-semibold transition-colors cursor-pointer border border-outline-variant/20"
                 title="Download original PPT/PPTX file"
               >
                 <span className="material-symbols-outlined text-[16px] text-orange-400">download</span>
@@ -323,7 +324,7 @@ export default function PresentationViewerModal({
               <button
                 type="button"
                 onClick={() => setShowGridView((v) => !v)}
-                className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                className={`p-1.5 sm:p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
                   showGridView
                     ? 'bg-secondary text-on-secondary-container'
                     : 'text-on-surface-variant hover:bg-surface-variant/40 hover:text-on-surface'
@@ -335,11 +336,11 @@ export default function PresentationViewerModal({
               </button>
             )}
 
-            {/* Laser Pointer */}
+            {/* Laser Pointer (hidden on mobile, available in present mode) */}
             <button
               type="button"
               onClick={() => setLaserActive((v) => !v)}
-              className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+              className={`hidden sm:flex p-2 rounded-lg text-xs font-semibold items-center gap-1 transition-all cursor-pointer ${
                 laserActive
                   ? 'bg-red-500/20 text-red-400 border border-red-500/50'
                   : 'text-on-surface-variant hover:bg-surface-variant/40'
@@ -349,11 +350,11 @@ export default function PresentationViewerModal({
               <span className="material-symbols-outlined text-[18px]">highlight</span>
             </button>
 
-            {/* Chalkboard Mode */}
+            {/* Chalkboard Mode (hidden on mobile) */}
             <button
               type="button"
               onClick={() => setChalkboardMode((v) => !v)}
-              className={`p-2 rounded-lg text-xs transition-colors cursor-pointer ${
+              className={`hidden sm:flex p-2 rounded-lg text-xs transition-colors cursor-pointer ${
                 chalkboardMode
                   ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-500/40'
                   : 'text-on-surface-variant hover:bg-surface-variant/40'
@@ -367,7 +368,7 @@ export default function PresentationViewerModal({
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container font-bold text-xs hover:opacity-90 transition-all cursor-pointer shadow-sm"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container font-bold text-xs hover:opacity-90 transition-all cursor-pointer shadow-sm"
               title="Launch Fullscreen Presenter Mode (Key: F)"
             >
               <span className="material-symbols-outlined text-[18px]">present_to_all</span>
@@ -378,7 +379,7 @@ export default function PresentationViewerModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors cursor-pointer ml-1"
+              className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors cursor-pointer ml-0.5 sm:ml-1"
               title="Close Viewer"
             >
               <span className="material-symbols-outlined text-[20px]">close</span>
@@ -624,13 +625,13 @@ export default function PresentationViewerModal({
 
       {/* Bottom Presentation Control Bar */}
       {!isProcessing && !isFailed && totalSlides > 0 && (
-        <footer className="h-16 px-4 md:px-8 bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/15 flex items-center justify-between shrink-0 z-20">
+        <footer className="h-14 sm:h-16 px-2.5 sm:px-4 md:px-8 bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/15 flex items-center justify-between shrink-0 z-20 min-w-0">
           {/* Left: Previous Slide Button */}
           <button
             type="button"
             onClick={handlePrev}
             disabled={currentSlide === 0}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer border ${
+            className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer border ${
               currentSlide > 0
                 ? 'bg-surface-container-high hover:bg-surface-variant text-on-surface border-outline-variant/30 hover:border-secondary/40 shadow-sm'
                 : 'opacity-40 cursor-not-allowed border-transparent text-on-surface-variant/50'
@@ -642,9 +643,9 @@ export default function PresentationViewerModal({
           </button>
 
           {/* Center: Slide Position, Counter & Direct Jump */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs md:text-sm font-bold text-on-surface tracking-wide">
-              Slide <span className="text-secondary">{currentSlide + 1}</span> of {totalSlides}
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <span className="text-xs md:text-sm font-bold text-on-surface tracking-wide shrink-0">
+              <span className="hidden xs:inline">Slide </span><span className="text-secondary">{currentSlide + 1}</span> / {totalSlides}
             </span>
 
             {/* Slider for quick scrubbing */}
@@ -654,7 +655,7 @@ export default function PresentationViewerModal({
               max={Math.max(0, totalSlides - 1)}
               value={currentSlide}
               onChange={(e) => handleJumpToSlide(Number(e.target.value))}
-              className="w-24 sm:w-44 accent-secondary cursor-pointer h-1.5 bg-surface-variant rounded-lg"
+              className="w-16 xs:w-24 sm:w-44 accent-secondary cursor-pointer h-1.5 bg-surface-variant rounded-lg"
               title="Scrub slides"
             />
 
@@ -694,7 +695,7 @@ export default function PresentationViewerModal({
             type="button"
             onClick={handleNext}
             disabled={currentSlide === totalSlides - 1}
-            className={`flex items-center gap-2 px-5 py-2 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer border ${
+            className={`flex items-center gap-1 sm:gap-2 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-xl font-bold text-xs md:text-sm transition-all cursor-pointer border ${
               currentSlide < totalSlides - 1
                 ? 'bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container hover:opacity-90 shadow-md'
                 : 'opacity-40 cursor-not-allowed border-transparent text-on-surface-variant/50'

@@ -22,13 +22,13 @@ export default function SmartClassTopBar({ breadcrumbs = [], onToggleMobileMenu 
   };
 
   return (
-    <header className="docked full-width top-0 sticky z-40 bg-surface/85 backdrop-blur-xl border-b border-outline-variant/10 flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-xs h-16">
+    <header className="docked full-width top-0 sticky z-40 bg-surface/85 backdrop-blur-xl border-b border-outline-variant/10 flex justify-between items-center w-full px-3 sm:px-margin-mobile md:px-margin-desktop py-xs h-16 min-w-0">
       {/* Mobile Title & Menu Toggle */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {onToggleMobileMenu && (
           <button
             onClick={onToggleMobileMenu}
-            className="md:hidden text-on-surface-variant hover:bg-surface-variant/30 rounded-full p-2 transition-colors cursor-pointer"
+            className="md:hidden text-on-surface-variant hover:bg-surface-variant/30 rounded-full p-1.5 sm:p-2 transition-colors cursor-pointer shrink-0"
             aria-label="Toggle menu"
           >
             <span className="material-symbols-outlined">menu</span>
@@ -36,33 +36,33 @@ export default function SmartClassTopBar({ breadcrumbs = [], onToggleMobileMenu 
         )}
         
         {/* Breadcrumb Navigation or Brand */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
           <Link
             to="/smart-class"
-            className="font-headline-sm text-headline-sm font-bold text-secondary hover:text-secondary-fixed transition-colors flex items-center gap-2 shrink-0"
+            className="font-headline-sm text-sm sm:text-headline-sm font-bold text-secondary hover:text-secondary-fixed transition-colors flex items-center gap-1.5 sm:gap-2 shrink-0"
           >
             <img
               src="/app-icon.png"
               alt="Smart Class"
               className="w-6 h-6 rounded-md object-contain shrink-0"
             />
-            <span>Smart Class</span>
+            <span className="truncate max-w-[100px] xs:max-w-none">Smart Class</span>
           </Link>
 
           {breadcrumbs.length > 0 && (
-            <div className="hidden sm:flex items-center gap-2 text-on-surface-variant text-sm truncate">
+            <div className="hidden sm:flex items-center gap-2 text-on-surface-variant text-xs sm:text-sm min-w-0 truncate">
               {breadcrumbs.map((crumb, idx) => (
                 <React.Fragment key={idx}>
-                  <span className="text-outline-variant text-xs">/</span>
+                  <span className="text-outline-variant text-xs shrink-0">/</span>
                   {crumb.path ? (
                     <Link
                       to={crumb.path}
-                      className="hover:text-secondary font-medium transition-colors truncate max-w-[140px]"
+                      className="hover:text-secondary font-medium transition-colors truncate max-w-[120px] md:max-w-[140px]"
                     >
                       {crumb.label}
                     </Link>
                   ) : (
-                    <span className="text-on-surface font-semibold truncate max-w-[160px]">{crumb.label}</span>
+                    <span className="text-on-surface font-semibold truncate max-w-[140px] md:max-w-[160px]">{crumb.label}</span>
                   )}
                 </React.Fragment>
               ))}
@@ -77,7 +77,7 @@ export default function SmartClassTopBar({ breadcrumbs = [], onToggleMobileMenu 
       </div>
 
       {/* Right Actions */}
-      <div className="flex items-center gap-2 md:gap-3 ml-auto relative">
+      <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 ml-auto relative shrink-0">
         {/* Quick Search */}
         <button
           type="button"
@@ -93,7 +93,8 @@ export default function SmartClassTopBar({ breadcrumbs = [], onToggleMobileMenu 
         <button
           type="button"
           onClick={() => navigate('/smart-class/add-material')}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container font-semibold text-xs md:text-sm hover:opacity-95 shadow-sm transition-all cursor-pointer"
+          className="flex items-center gap-1.5 p-2 sm:px-3.5 sm:py-1.5 rounded-lg bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container font-semibold text-xs md:text-sm hover:opacity-95 shadow-sm transition-all cursor-pointer"
+          title="Add Material"
         >
           <span className="material-symbols-outlined text-[18px]">add_circle</span>
           <span className="hidden sm:inline">Add Material</span>

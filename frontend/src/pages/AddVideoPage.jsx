@@ -197,31 +197,37 @@ export default function AddVideoPage() {
         <SmartClassTopBar onToggleMobileMenu={() => setMobileMenuOpen && setMobileMenuOpen(true)} />
         <main className="flex-1 flex items-center justify-center px-margin-mobile">
           <div className="max-w-md w-full bg-surface-container-low rounded-2xl p-lg card-border text-center flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-secondary-container/20 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-secondary-container/20 flex items-center justify-center shrink-0">
               <span className="material-symbols-outlined text-secondary text-[36px]">check_circle</span>
             </div>
             <h2 className="font-headline-md text-headline-md font-bold text-on-surface">Added to Smart Class Library</h2>
-            <div className="font-body-md text-body-md text-on-surface-variant">
-              Class {material.class_name} → {material.subject_name} → {material.chapter_name} → {material.part_title}
+            <div className="font-body-md text-body-md text-on-surface-variant flex flex-wrap items-center justify-center gap-1.5 break-words">
+              <span>Class {material.class_name}</span>
+              <span>→</span>
+              <span>{material.subject_name}</span>
+              <span>→</span>
+              <span>{material.chapter_name}</span>
+              <span>→</span>
+              <span className="text-secondary">{material.part_title}</span>
             </div>
             {duplicateNotice && (
-              <p className="font-body-sm text-body-sm text-on-surface-variant bg-surface-dim rounded-lg p-3">
+              <p className="font-body-sm text-body-sm text-on-surface-variant bg-surface-dim rounded-lg p-3 break-words">
                 This video was already in your library at: {duplicateNotice.join(', ')}. It's now also available here without
                 re-downloading.
               </p>
             )}
-            <div className="flex gap-3 mt-2">
+            <div className="flex flex-col sm:flex-row gap-3 mt-2 w-full justify-center">
               <button
                 type="button"
                 onClick={() => navigate('/smart-class/library')}
-                className="px-6 py-2.5 bg-primary text-on-primary rounded-lg font-label-md text-label-md font-bold hover:bg-primary-container transition-colors cursor-pointer"
+                className="px-6 py-2.5 bg-primary text-on-primary rounded-lg font-label-md text-label-md font-bold hover:bg-primary-container transition-colors cursor-pointer text-center"
               >
                 Open
               </button>
               <button
                 type="button"
                 onClick={handleAddAnother}
-                className="px-6 py-2.5 border border-outline-variant text-on-surface rounded-lg font-label-md text-label-md hover:bg-surface-variant transition-colors cursor-pointer"
+                className="px-6 py-2.5 border border-outline-variant text-on-surface rounded-lg font-label-md text-label-md hover:bg-surface-variant transition-colors cursor-pointer text-center"
               >
                 Add Another
               </button>
@@ -362,10 +368,10 @@ export default function AddVideoPage() {
           ) : (
             <div className="bg-surface-container-low rounded-xl p-md card-border flex flex-col gap-sm">
               <label className="font-label-md text-label-md text-on-surface-variant">Upload a file</label>
-              <label className="border-2 border-dashed border-outline-variant/40 rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3 bg-surface-dim hover:bg-surface-variant/20 hover:border-primary/50 transition-all cursor-pointer">
+              <label className="border-2 border-dashed border-outline-variant/40 rounded-xl p-6 sm:p-8 flex flex-col items-center justify-center text-center gap-3 bg-surface-dim hover:bg-surface-variant/20 hover:border-primary/50 transition-all cursor-pointer min-w-0">
                 <input type="file" accept={UPLOAD_ACCEPT} className="hidden" onChange={handleFileChange} />
                 <span className="material-symbols-outlined text-on-surface-variant text-[32px]">upload_file</span>
-                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                <p className="font-body-sm text-body-sm text-on-surface-variant break-all px-2 max-w-full">
                   {selectedFile ? selectedFile.name : 'Click to choose a video, image, PDF, or PowerPoint file'}
                 </p>
               </label>
@@ -373,7 +379,7 @@ export default function AddVideoPage() {
           )}
 
           {mode === 'link' && info && (
-            <div className="bg-surface-container-low rounded-xl p-md card-border flex flex-col sm:flex-row gap-md">
+            <div className="bg-surface-container-low rounded-xl p-md card-border flex flex-col sm:flex-row gap-md min-w-0">
               {info.thumbnail && (
                 <img
                   src={info.thumbnail}
@@ -382,7 +388,7 @@ export default function AddVideoPage() {
                 />
               )}
               <div className="flex-1 min-w-0">
-                <p className="font-headline-sm text-headline-sm font-semibold text-on-surface line-clamp-2">{info.title}</p>
+                <p className="font-headline-sm text-headline-sm font-semibold text-on-surface line-clamp-2 break-words">{info.title}</p>
                 <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
                   {formatDuration(info.duration)} {info.uploader ? `· ${info.uploader}` : ''}
                 </p>

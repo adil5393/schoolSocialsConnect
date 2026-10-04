@@ -117,12 +117,12 @@ export default function ContentCoveragePage() {
 
           {/* Overview Score Card */}
           {coverageData && (
-            <div className="bg-surface-container-low p-6 rounded-3xl border border-outline-variant/20 shadow-md flex flex-col md:flex-row items-center justify-between gap-6">
-              <div>
+            <div className="bg-surface-container-low p-4 sm:p-6 rounded-3xl border border-outline-variant/20 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-5 min-w-0">
+              <div className="min-w-0">
                 <span className="text-xs font-bold uppercase tracking-wider text-secondary">
                   Class {selectedClassObj?.name} • {selectedSubjectObj?.name}
                 </span>
-                <h2 className="font-headline-sm text-2xl font-bold text-on-surface mt-1">
+                <h2 className="font-headline-sm text-xl sm:text-2xl font-bold text-on-surface mt-1 break-words">
                   Curriculum Health: {coverageData.average_score}%
                 </h2>
                 <p className="text-xs text-on-surface-variant mt-1">
@@ -131,8 +131,8 @@ export default function ContentCoveragePage() {
               </div>
 
               {/* Average Progress Meter */}
-              <div className="flex items-center gap-4 shrink-0">
-                <div className="w-32 bg-surface-dim h-3 rounded-full overflow-hidden border border-outline-variant/20">
+              <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3 sm:gap-4 w-full md:w-auto shrink-0">
+                <div className="w-full xs:w-32 bg-surface-dim h-3 rounded-full overflow-hidden border border-outline-variant/20">
                   <div
                     className={`h-full rounded-full ${
                       coverageData.average_score >= 75
@@ -147,7 +147,7 @@ export default function ContentCoveragePage() {
                 <button
                   type="button"
                   onClick={() => navigate('/smart-class/add-material')}
-                  className="px-4 py-2 bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container text-xs font-bold rounded-xl hover:opacity-90 shadow-md cursor-pointer"
+                  className="px-4 py-2.5 bg-gradient-to-r from-secondary-container to-secondary text-on-secondary-container text-xs font-bold rounded-xl hover:opacity-90 shadow-md cursor-pointer text-center"
                 >
                   + Add Missing Material
                 </button>
@@ -181,7 +181,7 @@ export default function ContentCoveragePage() {
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 min-w-0">
               {coverageData.chapters.map((chap, idx) => {
                 const statusStyles =
                   chap.status === 'Excellent'
@@ -195,16 +195,16 @@ export default function ContentCoveragePage() {
                 return (
                   <div
                     key={chap.chapter_id}
-                    className="bg-surface-container-low p-5 md:p-6 rounded-2xl border border-outline-variant/20 hover:border-secondary/30 transition-all flex flex-col gap-4"
+                    className="bg-surface-container-low p-4 sm:p-6 rounded-2xl border border-outline-variant/20 hover:border-secondary/30 transition-all flex flex-col gap-4 min-w-0"
                   >
                     {/* Chapter Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-surface-dim text-on-surface border border-outline-variant/20">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1 min-w-0">
+                          <span className="text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-surface-dim text-on-surface border border-outline-variant/20 shrink-0">
                             {String(idx + 1).padStart(2, '0')}
                           </span>
-                          <h3 className="font-headline-sm text-base md:text-lg font-bold text-on-surface">
+                          <h3 className="font-headline-sm text-base md:text-lg font-bold text-on-surface break-words min-w-0">
                             {chap.chapter_name}
                           </h3>
                         </div>
@@ -213,7 +213,7 @@ export default function ContentCoveragePage() {
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 shrink-0">
                         <span className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${statusStyles}`}>
                           {chap.status} ({chap.score}%)
                         </span>
@@ -250,18 +250,18 @@ export default function ContentCoveragePage() {
                     </div>
 
                     {/* Category Checklist Breakdown */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-outline-variant/10">
+                    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-outline-variant/10">
                       {chap.categories.map((cat) => (
                         <div
                           key={cat.category}
-                          className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
+                          className={`p-2.5 rounded-xl border flex items-center gap-2.5 min-w-0 ${
                             cat.has_material
                               ? 'bg-emerald-500/5 border-emerald-500/20 text-on-surface'
                               : 'bg-surface-dim border-outline-variant/15 text-on-surface-variant/60'
                           }`}
                         >
                           <span
-                            className={`material-symbols-outlined text-[18px] ${
+                            className={`material-symbols-outlined text-[18px] shrink-0 ${
                               cat.has_material ? 'text-emerald-400 font-bold' : 'text-outline-variant'
                             }`}
                           >
