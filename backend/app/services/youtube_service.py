@@ -1,6 +1,11 @@
+import json
 import logging
+import random
 import re
 import shutil
+import threading
+import time
+import urllib.request
 import uuid
 from pathlib import Path
 from urllib.parse import urlparse
@@ -49,10 +54,57 @@ def validate_youtube_url(url: str) -> None:
         raise YouTubeError("Only youtube.com and youtu.be links are supported", 400)
 
 
+_PROXY_CACHE_TTL = 600  # seconds
+_proxy_cache: dict = {"fetched_at": 0.0, "proxies": []}
+_proxy_lock = threading.Lock()
+
+
+def _webshare_proxies(force: bool = False) -> list[str]:
+    with _proxy_lock:
+        fresh = time.time() - _proxy_cache["fetched_at"] < _PROXY_CACHE_TTL
+        if _proxy_cache["proxies"] and fresh and not force:
+            return _proxy_cache["proxies"]
+        try:
+            req = urllib.request.Request(
+                "https://proxy.webshare.io/api/v2/proxy/list/?mode=direct&page=1&page_size=100",
+                headers={"Authorization": f"Token {settings.webshare_api_key}"},
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.load(resp)
+            _proxy_cache["proxies"] = [
+                f"http://{p['username']}:{p['password']}@{p['proxy_address']}:{p['port']}"
+                for p in data.get("results", [])
+                if p.get("valid")
+            ]
+            _proxy_cache["fetched_at"] = time.time()
+        except Exception:
+            logger.exception("Failed to fetch Webshare proxy list")
+        return _proxy_cache["proxies"]
+
+
+def _pick_proxy() -> str:
+    if settings.webshare_api_key:
+        proxies = _webshare_proxies()
+        if proxies:
+            return random.choice(proxies)
+    return settings.youtube_proxy
+
+
+def _attempts() -> int:
+    # Only worth retrying when each attempt can land on a different proxy.
+    return max(1, settings.youtube_proxy_retries) if settings.webshare_api_key else 1
+
+
+def _is_retryable(raw: str) -> bool:
+    lowered = raw.lower()
+    return any(s in lowered for s in ("not a bot", "confirm you", "proxy", "connection", "timed out", "http error 4", "http error 5"))
+
+
 def _network_opts() -> dict:
     opts: dict = {}
-    if settings.youtube_proxy:
-        opts["proxy"] = settings.youtube_proxy
+    proxy = _pick_proxy()
+    if proxy:
+        opts["proxy"] = proxy
     if settings.youtube_cookies_file and Path(settings.youtube_cookies_file).is_file():
         opts["cookiefile"] = settings.youtube_cookies_file
     return opts
@@ -82,19 +134,24 @@ def _friendly_error(raw: str) -> str:
 
 def _extract_info(url: str) -> dict:
     validate_youtube_url(url)
-    ydl_opts = {
-        "quiet": True,
-        "no_warnings": True,
-        "skip_download": True,
-        "noplaylist": True,
-        "socket_timeout": 30,
-        **_network_opts(),
-    }
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            return ydl.extract_info(url, download=False)
-    except (yt_dlp.utils.DownloadError, Exception) as exc:
-        raise YouTubeError(_friendly_error(str(exc)), 502) from exc
+    last_exc: Exception | None = None
+    for _ in range(_attempts()):
+        ydl_opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "skip_download": True,
+            "noplaylist": True,
+            "socket_timeout": 30,
+            **_network_opts(),
+        }
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                return ydl.extract_info(url, download=False)
+        except Exception as exc:
+            last_exc = exc
+            if not _is_retryable(str(exc)):
+                break
+    raise YouTubeError(_friendly_error(str(last_exc)), 502) from last_exc
 
 
 def _available_video_heights(info: dict) -> list[int]:
@@ -200,11 +257,20 @@ def download_media(url: str, media_type: str, fmt: str, quality: str) -> tuple[P
                 }
             )
 
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-        except yt_dlp.utils.DownloadError as exc:
-            raise YouTubeError(_friendly_error(str(exc)), 502) from exc
+        last_exc: Exception | None = None
+        for _ in range(_attempts()):
+            ydl_opts.update(_network_opts())
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([url])
+                last_exc = None
+                break
+            except yt_dlp.utils.DownloadError as exc:
+                last_exc = exc
+                if not _is_retryable(str(exc)):
+                    break
+        if last_exc is not None:
+            raise YouTubeError(_friendly_error(str(last_exc)), 502) from last_exc
 
         produced = [p for p in request_dir.glob("*") if p.suffix not in (".part", ".ytdl") and p.is_file()]
         if not produced:

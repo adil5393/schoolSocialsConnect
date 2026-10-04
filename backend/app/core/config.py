@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     # YouTube blocks most datacenter/VPS IPs ("Sign in to confirm you're not a bot"). Workarounds:
     # route through a residential proxy and/or supply an exported cookies.txt (Netscape format).
     youtube_proxy: str = ""
+    # If set, the proxy list is fetched from Webshare's API (cached) and a random valid proxy is
+    # used per attempt, with retries on other proxies. Takes precedence over youtube_proxy.
+    webshare_api_key: str = ""
+    youtube_proxy_retries: int = 3
     youtube_cookies_file: str = ""
     # Separate from youtube_download_timeout on purpose: that one bounds a single socket
     # operation during download, while transcoding a long video can legitimately take much
