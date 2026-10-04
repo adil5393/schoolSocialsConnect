@@ -33,7 +33,7 @@ export default function SmartClassLoginPage() {
         <div className="flex items-center gap-3 mb-8">
           <img
             src="/app-icon.png"
-            alt="SchoolSocialsConnect"
+            alt="Smart Class"
             className="w-11 h-11 rounded-xl shadow-md object-contain shrink-0"
           />
           <div>

@@ -24,7 +24,7 @@ export default function SmartClassLayout() {
               <div className="flex items-center gap-2.5">
                 <img
                   src="/app-icon.png"
-                  alt="SchoolSocialsConnect"
+                  alt="Smart Class"
                   className="w-8 h-8 rounded-lg shadow-sm object-contain"
                 />
                 <span className="font-headline-sm font-bold text-secondary">Smart Class</span>

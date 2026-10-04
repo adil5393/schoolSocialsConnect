@@ -124,7 +124,7 @@ export default function SmartClassSidebar({ variant = 'desktop', onClose }) {
           <div className="flex items-center gap-2.5 min-w-0">
             <img
               src="/app-icon.png"
-              alt="SchoolSocialsConnect"
+              alt="Smart Class"
               className="w-9 h-9 rounded-xl shadow-md shrink-0 object-contain"
             />
             <div className="min-w-0">
@@ -148,7 +148,7 @@ export default function SmartClassSidebar({ variant = 'desktop', onClose }) {
         <div className="flex flex-col items-center mb-3">
           <img
             src="/app-icon.png"
-            alt="SchoolSocialsConnect"
+            alt="Smart Class"
             className="w-10 h-10 rounded-xl shadow-md object-contain hover:scale-105 transition-transform"
           />
           <button
